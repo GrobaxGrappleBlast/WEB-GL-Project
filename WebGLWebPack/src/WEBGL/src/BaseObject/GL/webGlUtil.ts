@@ -22,7 +22,7 @@
                 throw new Error("Unable to initialize WebGL");
             }
             gl.enable(gl.CULL_FACE);
-
+            gl.enable(gl.DEPTH_TEST);
             return canvas;
         }
     }
