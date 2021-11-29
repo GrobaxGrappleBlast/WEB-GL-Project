@@ -95,13 +95,7 @@ import { Texture, LoadableTexture } from '../BaseObject/Components/Texture';
             {
                 var mesh = ASSET.meshes[i];
                 var faceArr:number[] = [];
-                var f = 0;
-
-                mesh.faces.forEach(face => {
-                    face.forEach( vertIndex => {
-                        faceArr.push( vertIndex );
-                    });
-                });
+                faceArr = [].concat.apply( [] , mesh.faces );
 
                 _meshes.push( new Mesh(
                     mesh.vertices,
