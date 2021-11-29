@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\WebGL",
+    "\\WebGL\\resources",
+    "\\WebGL\\src\\Core\\Math",
+    "\\WebGL\\src\\Core\\Types",
+    "\\WebGL\\src\\Core\\Types\\GL",
+    "\\WebGL\\src\\Loader",
+    "\\WebGL\\src\\Loader\\Assets",
+    "\\WebGL\\src\\Loader\\Message",
+    "\\WebGL\\src\\Shaders"
+  ],
+  "SelectedNode": "\\WebGL\\index.html",
+  "PreviewInSolutionExplorer": false
+}
