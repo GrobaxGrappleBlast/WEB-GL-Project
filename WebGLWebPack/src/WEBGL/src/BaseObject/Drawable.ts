@@ -6,24 +6,13 @@ import { gl } from "./GL/webGlUtil";
 import { IDrawable } from './IDrawable';
 
     export class Drawable implements IDrawable{
-
-        public _tex : Texture; 
-        public _shader : Shader;
         private _mesh : Mesh;
 
         public constructor(){}
    
-        public setupWOrld():void{
-            this._shader.use();
-            gl.uniformMatrix4fv(this._shader.getUniformLocation("worldMatrix"), false, GLOBAL_WORLD.worldMatrix.values );
-            gl.uniformMatrix4fv(this._shader.getUniformLocation("viewMatrix") , false, GLOBAL_WORLD.viewMatrix.values  );
-            gl.uniformMatrix4fv(this._shader.getUniformLocation("projMatrix") , false, GLOBAL_WORLD.projMatrix.values  );
-        }
-        
         public bind(){
-            this._shader.use();
             this._mesh.bind();
-            this._tex.bind();
+            
         }
 
         public draw(){
@@ -31,33 +20,28 @@ import { IDrawable } from './IDrawable';
             this._mesh.draw();
         }
 
-
         public getMesh():Mesh{
             return this._mesh;
         }
-        public setMesh(nMesh : Mesh):void{
+        public setMesh(nMesh : Mesh, shader:Shader):void{
             this._mesh = nMesh;
-            this._mesh.loadShaderLocations(this._shader);
+            this._mesh.loadShaderLocations(shader);
         }
 
     }
 
     export class DefaultCube extends Drawable{
-        public constructor(){
+        public constructor(shader : Shader){
             super();
-
-            this._shader = new DefaultShader("SHADER01"); 
-            this.setMesh(Mesh.createTestMesh());
-            this._tex = new LoadableTexture("resources/images/RTS_Crate.png")
-            this.setupWOrld();
+            this.setMesh(Mesh.createTestMesh(),shader);
             
         }
         
         public draw():void{
-            GLOBAL_WORLD.rotateWorld(0.01);
-            gl.uniformMatrix4fv(this._shader.getUniformLocation("worldMatrix"), false, GLOBAL_WORLD.worldMatrix.values    );
-            gl.clearColor(0.75, 0.85, 0.8, 1.0);
-            gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+            //GLOBAL_WORLD.rotateWorld(0.01);
+            //gl.uniformMatrix4fv(this._shader.getUniformLocation("worldMatrix"), false, GLOBAL_WORLD.worldMatrix.values    );
+            //gl.clearColor(0.75, 0.85, 0.8, 1.0);
+            //gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
             this.bind();
             super.draw();
         }

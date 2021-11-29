@@ -7,11 +7,13 @@ import { FileRequest } from '../Loader/FileReuqest';
 import { JSON3D } from "../Loader/Assets/Loaders/JSONAssetLoader";
 import { Mesh } from '../BaseObject/Components/Mesh';
 import { Drawable, DefaultCube } from '../BaseObject/Drawable';
+import { DefaultShader, Shader } from '../BaseObject/GL/Shader';
+import { Texture, LoadableTexture } from '../BaseObject/Components/Texture';
 
    
 
     abstract class AWorld{
-        private camPos      = new vec3([-5,0,0]);
+        private camPos      = new vec3([-50,0,0]);
         private lookAt      = new vec3([ 0,0,0]);
         private zDirection  = new vec3([ 0,1,0]);
 
@@ -46,39 +48,48 @@ import { Drawable, DefaultCube } from '../BaseObject/Drawable';
     export var GLOBAL_WORLD:World;
     export class World extends AWorld{
 
-        // #########################
-        // SINGLE TON IMPLEMENTATION 
-        /*public static getInstance():World{
-            throw new Error("NABA");
-            if( GLOBAL_WORLD == undefined ){
-                console.log("CREATING NEW WORLD");
-                GLOBAL_WORLD = new World();
-            }
-            return GLOBAL_WORLD;
-        }*/
+        private _assets : Drawable[] = [];
+        private _asset : Drawable;
+        private _shader : Shader;
+        public _tex : Texture; 
+
+        public bind(): void{
+            this._shader.use();
+            gl.uniformMatrix4fv(this._shader.getUniformLocation("worldMatrix"), false, GLOBAL_WORLD.worldMatrix.values );
+            gl.uniformMatrix4fv(this._shader.getUniformLocation("viewMatrix") , false, GLOBAL_WORLD.viewMatrix.values  );
+            gl.uniformMatrix4fv(this._shader.getUniformLocation("projMatrix") , false, GLOBAL_WORLD.projMatrix.values  );
+            this._tex.bind();
+        }
 
         // # DRAWABLE IMPLEMENTATION 
         public draw(): void {
-            this._asset.draw();
+            this.bind();
+            this._assets.forEach(a => {
+                a.draw();
+            });
+           //this._asset.draw();
+            GLOBAL_WORLD.rotateWorld(0.005)
         }
-
-        // CONSTRUCTOR THINGIES 
-        _asset: Drawable;
 
         public constructor(){
             super();
             GLOBAL_WORLD = this;
-            this._asset = new DefaultCube();
+            //this._assets = [];
+            this._shader = new DefaultShader("default");
+            this._asset = new DefaultCube(this._shader);
+            
+            this._tex = new LoadableTexture("resources/images/RTS_Crate.png");
             var fr = new FileRequest("resources\\3d\\broken_steampunk_clock\\test.json", this);
         }
 
         public onFileRecieved( asset : any){
-            var ASSET : JSON3D = asset.data;
+        
+            console.log("ON FILE RECIEVED ")
+            var ASSET : JSON3D = asset.data;        
+            
             var length :number = ASSET.meshes.length;
-            console.log("MESH LENGTH IS " + length);
-
+            
             var _meshes : Mesh[] = [];
-            console.log(_meshes);
             
             for (let i = 0; i < length; i++)
             {
@@ -98,7 +109,19 @@ import { Drawable, DefaultCube } from '../BaseObject/Drawable';
                     faceArr    
                 ));
             }
-            this._asset.setMesh(_meshes[0])
+            
+            this._asset.setMesh(_meshes[0], this._shader);
+            
+            _meshes.forEach(mesh => {
+                this._assets.push(new DefaultCube(this._shader));  
+            });
+
+            for (let i = 0; i < _meshes.length; i++) {
+                this._assets[i].setMesh(_meshes[i] , this._shader )
+            }
+
+            console.log("LENGTH HAS BECOME " + this._assets.length);
+            
         }    
     }
 

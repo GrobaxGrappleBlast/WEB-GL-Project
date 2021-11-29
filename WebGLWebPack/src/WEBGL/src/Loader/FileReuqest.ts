@@ -27,7 +27,7 @@ import { MessageBus } from "./Message/MessageBus";
     
         onMessage(message : Message){
             this.handler.onFileRecieved(message.context );
-            MessageBus.removeSubscription(MESSAGE_ASSET_LOADER_ASSET_LOADED +  this.requestStr, this);
+            //MessageBus.removeSubscription(MESSAGE_ASSET_LOADER_ASSET_LOADED +  this.requestStr, this);
         }
         
     }

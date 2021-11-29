@@ -35,7 +35,6 @@ export class JSONAssetLoader implements IAssetLoader{
     private static onload(assetName:string ,rawData : string ):void{
         var JsonAsset : JSON3D =  JSON.parse(rawData ) ;
         var asset = new JSONAsset(assetName,JsonAsset);
-        console.log("fghjm");
         AssetManager.onAssetLoaded(asset);
     }
 }

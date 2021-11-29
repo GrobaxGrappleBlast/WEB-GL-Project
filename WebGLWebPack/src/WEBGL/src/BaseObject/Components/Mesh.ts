@@ -40,7 +40,6 @@ import { Buffer } from "../GL/Buffer"
             var _location_vertUVCoord  = shader.getAttributeLocation("a_texCord") ;
 
             function AssignBuffer(buffer : Buffer, data : number[] , attr : AttributeInfo):void{
-
                 buffer.bind();
                 buffer.addAttribute(attr);
                 buffer.pushData( data );

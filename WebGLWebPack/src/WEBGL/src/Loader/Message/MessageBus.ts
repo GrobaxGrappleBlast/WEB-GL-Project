@@ -24,7 +24,6 @@ import { MessageSubscriptionNode } from "./MessageSubscriptionNode";
         private constructor(){}
 
         public static addSubscription(code:string, handler:IMessageHandler){
-            console.log("adding Subscript to " + code);
             if(MessageBus._subscriptions[code] === undefined ){
                 MessageBus._subscriptions[code] = [];
             }
@@ -37,8 +36,7 @@ import { MessageSubscriptionNode } from "./MessageSubscriptionNode";
         }
 
         public static removeSubscription(code:string, handler:IMessageHandler){
-            console.log("removing Subscript from " + code);
-            if(MessageBus._subscriptions[code] === undefined ){
+           if(MessageBus._subscriptions[code] === undefined ){
                 console.warn("cannot unsubscribe handler from " + code + ". because" + code + "is not subscribed to");
                 return;
             }
