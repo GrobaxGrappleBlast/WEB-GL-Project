@@ -72,11 +72,8 @@ import { Buffer } from "../GL/Buffer"
         }
 
         public draw(){
-            if(this.hasLoadedShader){
+            if(this.hasLoadedShader)
                 this._buffers["face"].draw();
-            }else{
-                console.log("TRIED TO DRAW MESH BEFORE SHADER WAS LOADED TO MESH");
-            }
         }
         
         public unbind(){

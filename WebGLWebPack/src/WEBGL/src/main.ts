@@ -2,28 +2,35 @@ import { WebGLUtil } from "./BaseObject/GL/webGlUtil";
 import { AssetManager } from "./Loader/Assets/AssetManager";
 import { MessageBus } from "./Loader/Message/MessageBus";
 import { testClass } from "./test";
-import { World } from "./World/World";
+import { GLOBAL_WORLD, World } from './World/World';
 
-    export class startClass{
+    export class startClass {
 
-       
+        
         public static canvas : HTMLCanvasElement;
 
         public constructor(){
             this.init();   
         }
 
+
         public init(): void{
             AssetManager.initialize();
             startClass.canvas = WebGLUtil.initialize("c");
-            World.getInstance();
+            var world : World = new World();
             requestAnimationFrame(this.update.bind(this));
         }
         public update(){
-            World.getInstance().draw();
+            GLOBAL_WORLD.draw();
             MessageBus.update(1);
             requestAnimationFrame(this.update.bind(this));
         }
+        
+
+       
+
+
+
 
         public _e : testClass;
         public init_test(){

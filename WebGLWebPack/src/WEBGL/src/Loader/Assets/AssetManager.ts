@@ -36,15 +36,19 @@ import { JSONAssetLoader } from "./Loaders/JSONAssetLoader";
         }
 
         public static loadAsset(assetName:string):void{
-            let extension = assetName.split('.').pop().toLowerCase();
-            for (let i = 0; i < AssetManager._loaders.length; i++) {
-                let l = AssetManager._loaders[i];
-                if( l.supportedExtensions.indexOf(extension) !== -1){
-                    l.LoadAsset(assetName);
-                    return;
+            try{
+                let extension = assetName.split('.').pop().toLowerCase();
+                for (let i = 0; i < AssetManager._loaders.length; i++) {
+                    let l = AssetManager._loaders[i];
+                    if( l.supportedExtensions.indexOf(extension) !== -1){
+                        l.LoadAsset(assetName);
+                        return;
+                    }
                 }
+                console.warn("Unable to Load Asset with extension of ::" + extension);
+            }catch{
+                console.log("ERROR AT EXTENSIION : WAS : " + assetName);
             }
-            console.warn("Unable to Load Asset with extension of ::" + extension);
         }
 
         public static isAssetLoaded(assetName:string): boolean{

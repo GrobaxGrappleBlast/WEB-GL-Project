@@ -1,10 +1,12 @@
-import { LoableDrawable } from "./../BaseObject/LoableDrawable";
 import { gl } from "./../BaseObject/GL/webGlUtil";
 import { IDrawable } from "./../BaseObject/IDrawable";
 import { toRadians } from "./../Math/TSM_Library/constants";
 import { mat4 } from "./../Math/TSM_Library/mat4";
 import { vec3 } from "./../Math/TSM_Library/vec3";
-import { DefaultCube } from '../BaseObject/Drawable';
+import { FileRequest } from '../Loader/FileReuqest';
+import { JSON3D } from "../Loader/Assets/Loaders/JSONAssetLoader";
+import { Mesh } from '../BaseObject/Components/Mesh';
+import { Drawable, DefaultCube } from '../BaseObject/Drawable';
 
    
 
@@ -41,32 +43,62 @@ import { DefaultCube } from '../BaseObject/Drawable';
         View        = "viewMatrix" 
     };
 
+    export var GLOBAL_WORLD:World;
     export class World extends AWorld{
-        
-        _asset: IDrawable;
-        private constructor(){
-            super();  
-        }
 
-        static GlobalWorld : World;
-        
-        public static getInstance():World{
-            if( World.GlobalWorld == undefined)
-            {World.GlobalWorld = new World();}
-            World.GlobalWorld.load();
-            return World.GlobalWorld;
-        }
-
-        private isloaded:boolean = false;
-        public load(): void {         
-            if(!this.isloaded) {
-                this.isloaded = true;                
-                this._asset = new DefaultCube();
+        // #########################
+        // SINGLE TON IMPLEMENTATION 
+        /*public static getInstance():World{
+            throw new Error("NABA");
+            if( GLOBAL_WORLD == undefined ){
+                console.log("CREATING NEW WORLD");
+                GLOBAL_WORLD = new World();
             }
-        }
+            return GLOBAL_WORLD;
+        }*/
 
+        // # DRAWABLE IMPLEMENTATION 
         public draw(): void {
             this._asset.draw();
         }
+
+        // CONSTRUCTOR THINGIES 
+        _asset: Drawable;
+
+        public constructor(){
+            super();
+            GLOBAL_WORLD = this;
+            this._asset = new DefaultCube();
+            var fr = new FileRequest("resources\\3d\\broken_steampunk_clock\\test.json", this);
+        }
+
+        public onFileRecieved( asset : any){
+            var ASSET : JSON3D = asset.data;
+            var length :number = ASSET.meshes.length;
+            console.log("MESH LENGTH IS " + length);
+
+            var _meshes : Mesh[] = [];
+            console.log(_meshes);
+            
+            for (let i = 0; i < length; i++)
+            {
+                var mesh = ASSET.meshes[i];
+                var faceArr:number[] = [];
+                var f = 0;
+
+                mesh.faces.forEach(face => {
+                    face.forEach( vertIndex => {
+                        faceArr.push( vertIndex );
+                    });
+                });
+
+                _meshes.push( new Mesh(
+                    mesh.vertices,
+                    mesh.texturecoords[0],
+                    faceArr    
+                ));
+            }
+            this._asset.setMesh(_meshes[0])
+        }    
     }
 

@@ -23,12 +23,11 @@ import { MessageBus } from "./Message/MessageBus";
                 MessageBus.removeSubscription(MESSAGE_ASSET_LOADER_ASSET_LOADED +  requestString, this);        
                 this.handler.onFileRecieved(this.content.data);
             }
-
         }
     
         onMessage(message : Message){
             this.handler.onFileRecieved(message.context );
-            //MessageBus.removeSubscription(MESSAGE_ASSET_LOADER_ASSET_LOADED +  this.requestStr, this);
+            MessageBus.removeSubscription(MESSAGE_ASSET_LOADER_ASSET_LOADED +  this.requestStr, this);
         }
         
     }
