@@ -26,7 +26,7 @@ import { gl } from "./webGlUtil";
 
     }
 
-    export class Buffer {
+    export class GLBuffer {
 
         // ATTRIBUTES 
         private _hasAttributelocation: boolean = false;
@@ -84,7 +84,7 @@ import { gl } from "./webGlUtil";
             gl.deleteBuffer(this._buffer);
         }
 
-        public bind(normalized: boolean = false , name : string = "del") {
+        public bind(normalized: boolean = false ) {
 
             gl.bindBuffer(this._targerBufferType, this._buffer);
 

@@ -1,60 +1,76 @@
 import { AttributeInfo } from "../GL/Buffer";
-import { Shader } from "../GL/Shader";
 import { gl } from "../GL/webGlUtil";
-import { Buffer } from "../GL/Buffer"
+import { GLBuffer } from "../GL/Buffer"
+import { Material } from './Material';
 
     
     export class Mesh {
 
         private _bufferNames : string[] = [];
-        private _buffers :  {[name:string]:Buffer } = {}
+        private _buffers :  {[name:string]:GLBuffer } = {}
 
         public verticies    : number[];
         public texCoords    : number[];
         public faceIndecies : number[];
+        public normals : number[];
+
 
         public constructor(
             verticies    : number[]= null,
             texCoords    : number[]= null,
             faceIndecies : number[]= null,
+            normals : number[]= null,
+
         ){
             this.verticies    = verticies    ;
             this.texCoords    = texCoords    ;
             this.faceIndecies = faceIndecies ;
+            this.normals      = normals      ;
 
             this._bufferNames.push("uv");
-            this._buffers["uv"] = new Buffer(2, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+            this._buffers["uv"] = new GLBuffer(2, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
 
             this._bufferNames.push("loc");
-            this._buffers["loc"] = new Buffer(3, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+            this._buffers["loc"] = new GLBuffer(3, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+
+            this._bufferNames.push("norm");
+            this._buffers["norm"] = new GLBuffer(3, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+
 
             this._bufferNames.push("face");
-            this._buffers["face"] = new Buffer(123, gl.UNSIGNED_SHORT, gl.ELEMENT_ARRAY_BUFFER, gl.TRIANGLES);
+            this._buffers["face"] = new GLBuffer(123, gl.UNSIGNED_SHORT, gl.ELEMENT_ARRAY_BUFFER, gl.TRIANGLES);
         }
         
         private hasLoadedShader = false;
-        public loadShaderLocations( shader : Shader ){
+        public loadShaderLocations( mat : Material ){
 
             this.hasLoadedShader = true;
-            var _location_vertLocation = shader.getAttributeLocation("a_position") ;
-            var _location_vertUVCoord  = shader.getAttributeLocation("a_texCord") ;
+            var POSITION    = mat.VERTEX_POSITION;
+            var UV          = mat.VERTEX_UV;
+            var NORMAL      = mat.VERTEX_NORMAL;
 
-            function AssignBuffer(buffer : Buffer, data : number[] , attr : AttributeInfo):void{
-                buffer.bind();
-                buffer.addAttribute(attr);
-                buffer.pushData( data );
-                buffer.upload();
-                buffer.unbind();
-            }
-            let attr; 
-
-            // ALL ATTRIBTES THAT HAS ATTRIBUTE DATA 
-            attr = new AttributeInfo( _location_vertLocation, 3, 0);
-            AssignBuffer(this._buffers["loc"], this.verticies, attr)
-        
-            attr = new AttributeInfo( _location_vertUVCoord, 2, 0);
-            AssignBuffer(this._buffers["uv"], this.texCoords, attr)
+            function AssignThisBuffer(name:string, data : number[] ,attrLocation : number , pointSize : number, offset:number, THIS : Mesh ){
             
+                let attr = new AttributeInfo( attrLocation, pointSize, offset);
+                AssignBuffer(THIS._buffers[name], data, attr)
+
+                function AssignBuffer(buffer : GLBuffer, data : number[] , attr : AttributeInfo):void{
+                    buffer.bind();
+                    buffer.addAttribute(attr);
+                    buffer.pushData( data );
+                    buffer.upload();
+                    buffer.unbind();
+                }
+            }
+         
+            // ALL ATTRIBTES THAT HAS ATTRIBUTE DATA 
+            AssignThisBuffer( "loc" , this.verticies , POSITION , 3 , 0 , this);
+        
+            AssignThisBuffer( "uv" , this.texCoords , UV , 2 , 0 ,this);
+
+            if(this.normals != null )
+                AssignThisBuffer( "norm", this.normals, NORMAL, 3 ,0,this)
+
             // FACE INDICIES DOESNOT HAVE ATTRIBUTE DATA .. WHO KNOWS WHY
             this._buffers["face"].bind();
             this._buffers["face"].pushData( this.faceIndecies );
@@ -66,7 +82,11 @@ import { Buffer } from "../GL/Buffer"
         
         public bind(){
             this._bufferNames.forEach(name => {
-                    this._buffers[name].bind(false,name);                
+                if(name == "norm"){
+                    this._buffers[name].bind(true);    
+                }else{
+                    this._buffers[name].bind();    
+                }                                
             });
         }
 

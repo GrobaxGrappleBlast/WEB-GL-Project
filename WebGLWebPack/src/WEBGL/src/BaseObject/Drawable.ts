@@ -4,6 +4,7 @@ import { LoadableTexture, Texture } from "./Components/Texture";
 import { DefaultShader, Shader } from "./GL/Shader";
 import { gl } from "./GL/webGlUtil";
 import { IDrawable } from './IDrawable';
+import { Material } from './Components/Material';
 
     export class Drawable implements IDrawable{
         private _mesh : Mesh;
@@ -23,7 +24,7 @@ import { IDrawable } from './IDrawable';
         public getMesh():Mesh{
             return this._mesh;
         }
-        public setMesh(nMesh : Mesh, shader:Shader):void{
+        public setMesh(nMesh : Mesh, shader: Material):void{
             this._mesh = nMesh;
             this._mesh.loadShaderLocations(shader);
         }
@@ -31,7 +32,7 @@ import { IDrawable } from './IDrawable';
     }
 
     export class DefaultCube extends Drawable{
-        public constructor(shader : Shader){
+        public constructor(shader : Material){
             super();
             this.setMesh(Mesh.createTestMesh(),shader);
             

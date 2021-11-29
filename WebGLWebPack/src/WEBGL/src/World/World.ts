@@ -9,6 +9,7 @@ import { Mesh } from '../BaseObject/Components/Mesh';
 import { Drawable, DefaultCube } from '../BaseObject/Drawable';
 import { DefaultShader, Shader } from '../BaseObject/GL/Shader';
 import { Texture, LoadableTexture } from '../BaseObject/Components/Texture';
+import { Material } from '../BaseObject/Components/Material';
 
    
 
@@ -50,14 +51,21 @@ import { Texture, LoadableTexture } from '../BaseObject/Components/Texture';
 
         private _assets : Drawable[] = [];
         private _asset : Drawable;
-        private _shader : Shader;
+        //private _shader : Shader;
+        private _mat : Material;
         public _tex : Texture; 
 
         public bind(): void{
-            this._shader.use();
-            gl.uniformMatrix4fv(this._shader.getUniformLocation("worldMatrix"), false, GLOBAL_WORLD.worldMatrix.values );
-            gl.uniformMatrix4fv(this._shader.getUniformLocation("viewMatrix") , false, GLOBAL_WORLD.viewMatrix.values  );
-            gl.uniformMatrix4fv(this._shader.getUniformLocation("projMatrix") , false, GLOBAL_WORLD.projMatrix.values  );
+
+            this._mat.use();
+            this._mat.updateUniform_World(      GLOBAL_WORLD.worldMatrix);
+            this._mat.updateUniform_Camera(     GLOBAL_WORLD.viewMatrix );
+            this._mat.updateUniform_Projection( GLOBAL_WORLD.projMatrix )
+
+           // this._shader.use();
+            //gl.uniformMatrix4fv(this._shader.getUniformLocation("worldMatrix"), false, GLOBAL_WORLD.worldMatrix.values );
+            //gl.uniformMatrix4fv(this._shader.getUniformLocation("viewMatrix") , false, GLOBAL_WORLD.viewMatrix.values  );
+            //gl.uniformMatrix4fv(this._shader.getUniformLocation("projMatrix") , false, GLOBAL_WORLD.projMatrix.values  );
             this._tex.bind();
         }
 
@@ -73,18 +81,19 @@ import { Texture, LoadableTexture } from '../BaseObject/Components/Texture';
 
         public constructor(){
             super();
+            this._mat = new Material("default");
             GLOBAL_WORLD = this;
             //this._assets = [];
-            this._shader = new DefaultShader("default");
-            this._asset = new DefaultCube(this._shader);
+            //this._shader = new DefaultShader("default");
+            this._asset = new DefaultCube( this._mat);
             
-            this._tex = new LoadableTexture("resources/images/RTS_Crate.png");
+            this._tex = new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png");
             var fr = new FileRequest("resources\\3d\\broken_steampunk_clock\\test.json", this);
         }
 
         public onFileRecieved( asset : any){
         
-            console.log("ON FILE RECIEVED ")
+            console.log("ON FILE RECIEVED ");
             var ASSET : JSON3D = asset.data;        
             
             var length :number = ASSET.meshes.length;
@@ -100,18 +109,19 @@ import { Texture, LoadableTexture } from '../BaseObject/Components/Texture';
                 _meshes.push( new Mesh(
                     mesh.vertices,
                     mesh.texturecoords[0],
-                    faceArr    
+                    faceArr    ,
+                    mesh.normals
                 ));
             }
             
-            this._asset.setMesh(_meshes[0], this._shader);
+            this._asset.setMesh(_meshes[0], this._mat);
             
             _meshes.forEach(mesh => {
-                this._assets.push(new DefaultCube(this._shader));  
+                this._assets.push(new DefaultCube(this._mat));  
             });
 
             for (let i = 0; i < _meshes.length; i++) {
-                this._assets[i].setMesh(_meshes[i] , this._shader )
+                this._assets[i].setMesh(_meshes[i] , this._mat )
             }
 
             console.log("LENGTH HAS BECOME " + this._assets.length);

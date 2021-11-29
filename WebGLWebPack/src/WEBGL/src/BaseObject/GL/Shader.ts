@@ -6,7 +6,7 @@ import { gl } from "./webGlUtil";
 
 	export class Shader {
 
-		private _name: string;
+		public _name: string;
 		private _program: WebGLProgram;
 
 		private _attributes: { [name: string]: number } = {};
@@ -28,10 +28,6 @@ import { gl } from "./webGlUtil";
 
 			this.detectAttributes();
 			this.detectUniforms();
-		}
-
-		private getName(): string {
-			return this._name;
 		}
 
 		public use(): void {
@@ -128,18 +124,18 @@ import { gl } from "./webGlUtil";
 			let  _vShaderSource : string = `
 			attribute vec3 a_position;
 			attribute vec2 a_texCord;
+			attribute vec3 a_normal;
 
+			varying vec3 fragNormal;
 			varying vec2 fragTexCord;
 			
-
 			uniform mat4 worldMatrix;
 			uniform mat4 viewMatrix;
 			uniform mat4 projMatrix;
 
 			void main(){
-				//test = a_texCord;
 				fragTexCord = a_texCord;
-				//fragColor = a_color;
+				fragNormal  = a_normal ;
 				gl_Position = projMatrix * viewMatrix * worldMatrix * vec4(a_position, 1.0);
 			}`;
 
@@ -147,9 +143,7 @@ import { gl } from "./webGlUtil";
 				
 				precision mediump float;
 				
-
 				varying vec2 fragTexCord;
-
 				
 				uniform sampler2D diffuseTex;
 
