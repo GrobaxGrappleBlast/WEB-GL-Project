@@ -94,31 +94,22 @@ import { Material } from '../BaseObject/Components/Material';
 
         private _assets : Drawable[] = [];
         private _asset : Drawable;
-        //private _shader : Shader;
         private _mat : Material;
-        //public _tex : Texture; 
+        
 
         public bind(): void{
-
             this._mat.use();
             this._mat.updateUniform_World(      GLOBAL_WORLD.worldMatrix);
             this._mat.updateUniform_Camera(     GLOBAL_WORLD.viewMatrix );
             this._mat.updateUniform_Projection( GLOBAL_WORLD.projMatrix )
             this._mat.bind();
-           // this._shader.use();
-            //gl.uniformMatrix4fv(this._shader.getUniformLocation("worldMatrix"), false, GLOBAL_WORLD.worldMatrix.values );
-            //gl.uniformMatrix4fv(this._shader.getUniformLocation("viewMatrix") , false, GLOBAL_WORLD.viewMatrix.values  );
-            //gl.uniformMatrix4fv(this._shader.getUniformLocation("projMatrix") , false, GLOBAL_WORLD.projMatrix.values  );
-            //this._tex.bind();
         }
 
-        // # DRAWABLE IMPLEMENTATION 
         public draw(): void {
             this.bind();
             this._assets.forEach(a => {
                 a.draw();
             });
-           //this._asset.draw();
             GLOBAL_WORLD.rotateWorld(0.005)
         }
 
@@ -128,14 +119,11 @@ import { Material } from '../BaseObject/Components/Material';
                 "default",
                 new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png"),
                 new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_emissive.png"),
-              //  new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png")
+                new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png")
             );
             GLOBAL_WORLD = this;
-            //this._assets = [];
-            //this._shader = new DefaultShader("default");
+
             this._asset = new DefaultCube( this._mat);
-            
-            //this._tex = new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png");
             var fr = new FileRequest("resources\\3d\\broken_steampunk_clock\\test.json", this);
         }
 
