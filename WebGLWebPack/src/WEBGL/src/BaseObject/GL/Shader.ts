@@ -122,35 +122,52 @@ import { gl } from "./webGlUtil";
 		public constructor(name : string){
 	
 			let  _vShaderSource : string = `
+			
+
+
 			attribute vec3 a_position;
 			attribute vec2 a_texCord;
 			attribute vec3 a_normal;
 
-			varying vec3 fragNormal;
+			varying vec3 frag_normal;
 			varying vec2 fragTexCord;
-			
+
 			uniform mat4 worldMatrix;
 			uniform mat4 viewMatrix;
 			uniform mat4 projMatrix;
 
 			void main(){
 				fragTexCord = a_texCord;
-				fragNormal  = a_normal ;
+				frag_normal = (worldMatrix * vec4(a_normal, 0.0)).xyz;
 				gl_Position = projMatrix * viewMatrix * worldMatrix * vec4(a_position, 1.0);
-			}`;
+			}
+			
+			`;
 
 			let _fShaderSource : string = `
-				
-				precision mediump float;
-				
-				varying vec2 fragTexCord;
-				
-				uniform sampler2D diffuseTex;
 
-				void main(){
-					gl_FragColor =  texture2D(diffuseTex, fragTexCord);
-					//gl_FragColor = vec4( test, 0.5 , 1.0 );
-			}`;
+			precision mediump float;
+				
+			varying vec2 fragTexCord;
+			varying vec3 frag_normal;
+
+			uniform sampler2D sampler;
+
+			void main(){
+				//gl_FragColor =  texture2D(sampler, fragTexCord);
+				//gl_FragColor = vec4( test, 0.5 , 1.0 );
+
+				vec3 ambINT   = vec3(0.1,0.1,0.1);
+				vec3 sunINT   = vec3(0.7,0.6,0.1);
+				vec3 sunDIR   = normalize(vec3(1.0,-4.0,0.0));
+				vec3 lightINT = ambINT + sunINT + dot( frag_normal , sunDIR );
+
+				vec4 tex = texture2D(sampler,fragTexCord);
+				gl_FragColor = vec4(tex.rgb * lightINT, tex.a);
+			}
+
+
+			`;
 
 			super(name, _vShaderSource, _fShaderSource);
 			

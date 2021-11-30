@@ -11,16 +11,58 @@ import { DefaultShader, Shader } from '../BaseObject/GL/Shader';
 import { Texture, LoadableTexture } from '../BaseObject/Components/Texture';
 import { Material } from '../BaseObject/Components/Material';
 
-   
+   /*
+
+    export class Quaternion {
+        public w : number;
+        public x : number;
+        public y : number;
+        public z : number;
+        public constructor(){}
+    };
+
+    export class EulerAngles {
+        public roll : number;
+        public pitch: number;
+        public yaw: number;
+        public constructor(){}
+    };
+
+    export function ToEulerAngles(q:Quaternion):EulerAngles {
+        var angles: EulerAngles = new EulerAngles();
+
+        // roll (x-axis rotation)
+        var sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
+        var cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
+        angles.roll = std::atan2(sinr_cosp, cosr_cosp);
+
+        // pitch (y-axis rotation)
+        var sinp = 2 * (q.w * q.y - q.z * q.x);
+        if (std::abs(sinp) >= 1)
+            angles.pitch = std::copysign(M_PI / 2, sinp); // use 90 degrees if out of range
+        else
+            angles.pitch = std::asin(sinp);
+
+        // yaw (z-axis rotation)
+        var siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+        var cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+        angles.yaw = std::atan2(siny_cosp, cosy_cosp);
+
+        return angles;
+    }*/
 
     abstract class AWorld{
-        private camPos      = new vec3([-50,0,0]);
-        private lookAt      = new vec3([ 0,0,0]);
-        private zDirection  = new vec3([ 0,1,0]);
+        public camPos      = new vec3([-100,0,0]);
+        public lookAt      = new vec3([ 0,0,0]);
+        public zDirection  = new vec3([ 0,1,0]);
 
         public worldMatrix  : mat4 = mat4.identity; 
         public viewMatrix   : mat4 = mat4.lookAt( this.camPos, this.lookAt, this.zDirection);
         public projMatrix   : mat4 = mat4.perspective( toRadians(45), ( gl.canvas.width / gl.canvas.height), 0.1,1000 );
+
+        reCalc(camPos:vec3, lookAt:vec3, up:vec3){
+            this.viewMatrix   = mat4.lookAt( camPos, lookAt, up);
+        }
 
         constructor(){
         }
@@ -35,6 +77,7 @@ import { Material } from '../BaseObject/Components/Material';
             return this.projMatrix;
         }
 
+        
         public rotateWorld(angle:number){
             this.worldMatrix.rotate(angle, new vec3([0.5,0.5,1]) );
         }
@@ -92,10 +135,27 @@ import { Material } from '../BaseObject/Components/Material';
         }
 
         public onFileRecieved( asset : any){
-        
+            
+
             console.log("ON FILE RECIEVED ");
             var ASSET : JSON3D = asset.data;        
+                    
             
+            this.reCalc(
+                this.camPos,
+                new vec3([
+                    ASSET.cameras[0].lookat[0],
+                    ASSET.cameras[0].lookat[1],
+                    ASSET.cameras[0].lookat[2]
+                ]),
+                new vec3([
+                    ASSET.cameras[0].up[0],
+                    ASSET.cameras[0].up[1],
+                    ASSET.cameras[0].up[2]
+                ])
+            );
+
+
             var length :number = ASSET.meshes.length;
             
             var _meshes : Mesh[] = [];
