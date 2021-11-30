@@ -1,11 +1,11 @@
-import { Shader, DefaultShader } from '../GL/Shader';
+import { GLShader, DefaultShader } from '../GL/GLShader';
 import { mat4 } from '../../Math/TSM_Library/mat4';
 import { gl } from '../GL/webGlUtil';
 import { GLTexture } from './GLTexture';
 
 abstract class Material_01{
 
-    public shader : Shader;
+    public shader : GLShader;
     public constructor( name : string ){
         this.shader = new DefaultShader(name);
 

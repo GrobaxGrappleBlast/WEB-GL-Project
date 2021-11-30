@@ -1,7 +1,7 @@
 import { GLOBAL_WORLD, World } from "./../World/World";
 import { GLMesh } from "./Components/GLMesh";
 import { LoadableTexture, GLTexture } from "./Components/GLTexture";
-import { DefaultShader, Shader } from "./GL/Shader";
+import { DefaultShader, GLShader } from "./GL/GLShader";
 import { gl } from "./GL/webGlUtil";
 import { IDrawable } from './IDrawable';
 import { GLMaterial } from './Components/GLMaterial';

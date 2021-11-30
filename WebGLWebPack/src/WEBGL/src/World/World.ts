@@ -7,7 +7,7 @@ import { FileRequest } from '../Loader/FileReuqest';
 import { JSON3D } from "../Loader/Assets/Loaders/JSONAssetLoader";
 import { GLMesh } from '../BaseObject/Components/GLMesh';
 import { Drawable, DefaultCube } from '../BaseObject/Drawable';
-import { DefaultShader, Shader } from '../BaseObject/GL/Shader';
+import { DefaultShader, GLShader } from '../BaseObject/GL/GLShader';
 import { GLTexture, LoadableTexture } from '../BaseObject/Components/GLTexture';
 import { GLMaterial } from '../BaseObject/Components/GLMaterial';
 
