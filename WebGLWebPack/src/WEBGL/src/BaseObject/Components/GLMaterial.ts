@@ -1,9 +1,7 @@
 import { Shader, DefaultShader } from '../GL/Shader';
-import { vec3 } from '../../Math/TSM_Library/vec3';
-import { vec2 } from '../../Math/TSM_Library/vec2';
 import { mat4 } from '../../Math/TSM_Library/mat4';
 import { gl } from '../GL/webGlUtil';
-import { Texture } from './Texture';
+import { GLTexture } from './GLTexture';
 
 abstract class Material_01{
 
@@ -48,7 +46,7 @@ abstract class Material_01{
 }
 abstract class Material_02 extends Material_01{
 
-    private _texture : {[index:number]:Texture} = {};
+    private _texture : {[index:number]:GLTexture} = {};
     private _texUnif : {[index:number]:WebGLUniformLocation} = {};
     private _texGLNI : {[index:number]:number} = {};
     private _texINDI : number[] = [];
@@ -57,7 +55,7 @@ abstract class Material_02 extends Material_01{
         super(name);
     }
 
-    public addTexture( tex : Texture, texUniform : WebGLUniformLocation, TextureNumber : number, GL_UNIF_NAME : string, TEX_GL_INDEX : number){
+    public addTexture( tex : GLTexture, texUniform : WebGLUniformLocation, TextureNumber : number, GL_UNIF_NAME : string, TEX_GL_INDEX : number){
         this._texINDI.push(TextureNumber);
         this._texUnif[  TextureNumber   ] = texUniform;
         this._texture[  TextureNumber   ] = tex ;
@@ -79,16 +77,16 @@ abstract class Material_02 extends Material_01{
         });
     }
 }
-export class Material extends Material_02{
+export class GLMaterial extends Material_02{
     
-    private _texBase : Texture;
-    private _texEmit : Texture;
-    private _texRoug : Texture;
+    private _texBase : GLTexture;
+    private _texEmit : GLTexture;
+    private _texRoug : GLTexture;
     public constructor(
         name :string,
-        texBase : Texture = null,
-        texEmit : Texture = null,
-        texRoug : Texture = null,    
+        texBase : GLTexture = null,
+        texEmit : GLTexture = null,
+        texRoug : GLTexture = null,    
     ){
         super(name);
         this._texBase = texBase; 
@@ -100,7 +98,7 @@ export class Material extends Material_02{
         this.texInit(this._texRoug, "rough",2 ,gl.TEXTURE2);
 
     }
-    private texInit( tex : Texture, GL_UNIF_NAME : string , TextureNumber : number , TEX_GL_INDEX : number ):void{
+    private texInit( tex : GLTexture, GL_UNIF_NAME : string , TextureNumber : number , TEX_GL_INDEX : number ):void{
         if(tex != null){
             var texUniform = this.shader.getUniformLocation(GL_UNIF_NAME);
             this.addTexture(tex,texUniform,TextureNumber,GL_UNIF_NAME,TEX_GL_INDEX);

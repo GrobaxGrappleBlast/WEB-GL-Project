@@ -1,8 +1,8 @@
-import { FileRequest } from "./../../Loader/FileReuqest";
-import { IFileRequestResponse } from "./../../Loader/IFileRequestResponse";
+import { FileRequest } from "../../Loader/FileReuqest";
+import { IFileRequestResponse } from "../../Loader/IFileRequestResponse";
 import { gl } from "../GL/webGlUtil";
 
-    export class Texture{
+    export class GLTexture{
 
         private _texture : WebGLTexture = gl.createTexture();
         private _textureType : number ;
@@ -75,7 +75,7 @@ import { gl } from "../GL/webGlUtil";
     }
 
     
-    export class LoadableTexture extends Texture implements IFileRequestResponse{
+    export class LoadableTexture extends GLTexture implements IFileRequestResponse{
         
         private _request;
 

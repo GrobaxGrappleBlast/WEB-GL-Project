@@ -5,11 +5,11 @@ import { mat4 } from "./../Math/TSM_Library/mat4";
 import { vec3 } from "./../Math/TSM_Library/vec3";
 import { FileRequest } from '../Loader/FileReuqest';
 import { JSON3D } from "../Loader/Assets/Loaders/JSONAssetLoader";
-import { Mesh } from '../BaseObject/Components/Mesh';
+import { GLMesh } from '../BaseObject/Components/GLMesh';
 import { Drawable, DefaultCube } from '../BaseObject/Drawable';
 import { DefaultShader, Shader } from '../BaseObject/GL/Shader';
-import { Texture, LoadableTexture } from '../BaseObject/Components/Texture';
-import { Material } from '../BaseObject/Components/Material';
+import { GLTexture, LoadableTexture } from '../BaseObject/Components/GLTexture';
+import { GLMaterial } from '../BaseObject/Components/GLMaterial';
 
    /*
 
@@ -94,7 +94,7 @@ import { Material } from '../BaseObject/Components/Material';
 
         private _assets : Drawable[] = [];
         private _asset : Drawable;
-        private _mat : Material;
+        private _mat : GLMaterial;
         
 
         public bind(): void{
@@ -115,7 +115,7 @@ import { Material } from '../BaseObject/Components/Material';
 
         public constructor(){
             super();
-            this._mat = new Material(
+            this._mat = new GLMaterial(
                 "default",
                 new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png"),
                 new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_emissive.png"),
@@ -151,7 +151,7 @@ import { Material } from '../BaseObject/Components/Material';
 
             var length :number = ASSET.meshes.length;
             
-            var _meshes : Mesh[] = [];
+            var _meshes : GLMesh[] = [];
             
             for (let i = 0; i < length; i++)
             {
@@ -159,7 +159,7 @@ import { Material } from '../BaseObject/Components/Material';
                 var faceArr:number[] = [];
                 faceArr = [].concat.apply( [] , mesh.faces );
 
-                _meshes.push( new Mesh(
+                _meshes.push( new GLMesh(
                     mesh.vertices,
                     mesh.texturecoords[0],
                     faceArr    ,

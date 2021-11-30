@@ -1,13 +1,13 @@
 import { GLOBAL_WORLD, World } from "./../World/World";
-import { Mesh } from "./Components/Mesh";
-import { LoadableTexture, Texture } from "./Components/Texture";
+import { GLMesh } from "./Components/GLMesh";
+import { LoadableTexture, GLTexture } from "./Components/GLTexture";
 import { DefaultShader, Shader } from "./GL/Shader";
 import { gl } from "./GL/webGlUtil";
 import { IDrawable } from './IDrawable';
-import { Material } from './Components/Material';
+import { GLMaterial } from './Components/GLMaterial';
 
     export class Drawable implements IDrawable{
-        private _mesh : Mesh;
+        private _mesh : GLMesh;
 
         public constructor(){}
    
@@ -21,10 +21,10 @@ import { Material } from './Components/Material';
             this._mesh.draw();
         }
 
-        public getMesh():Mesh{
+        public getMesh():GLMesh{
             return this._mesh;
         }
-        public setMesh(nMesh : Mesh, shader: Material):void{
+        public setMesh(nMesh : GLMesh, shader: GLMaterial):void{
             this._mesh = nMesh;
             this._mesh.loadShaderLocations(shader);
         }
@@ -32,9 +32,9 @@ import { Material } from './Components/Material';
     }
 
     export class DefaultCube extends Drawable{
-        public constructor(shader : Material){
+        public constructor(shader : GLMaterial){
             super();
-            this.setMesh(Mesh.createTestMesh(),shader);
+            this.setMesh(GLMesh.createTestMesh(),shader);
             
         }
         

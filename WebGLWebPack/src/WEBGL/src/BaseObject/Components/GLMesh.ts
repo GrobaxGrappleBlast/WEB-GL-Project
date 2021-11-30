@@ -1,10 +1,10 @@
 import { AttributeInfo } from "../GL/Buffer";
 import { gl } from "../GL/webGlUtil";
 import { GLBuffer } from "../GL/Buffer"
-import { Material } from './Material';
+import { GLMaterial } from './GLMaterial';
 
     
-    export class Mesh {
+    export class GLMesh {
 
         private _bufferNames : string[] = [];
         private _buffers :  {[name:string]:GLBuffer } = {}
@@ -28,28 +28,27 @@ import { Material } from './Material';
             this.normals      = normals      ;
 
             this._bufferNames.push("uv");
-            this._buffers["uv"] = new GLBuffer(2, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+            this._buffers["uv"]   = new GLBuffer(2, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
 
             this._bufferNames.push("loc");
-            this._buffers["loc"] = new GLBuffer(3, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+            this._buffers["loc"]  = new GLBuffer(3, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
 
             this._bufferNames.push("norm");
             this._buffers["norm"] = new GLBuffer(3, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-
 
             this._bufferNames.push("face");
             this._buffers["face"] = new GLBuffer(123, gl.UNSIGNED_SHORT, gl.ELEMENT_ARRAY_BUFFER, gl.TRIANGLES);
         }
         
         private hasLoadedShader = false;
-        public loadShaderLocations( mat : Material ){
+        public loadShaderLocations( mat :GLMaterial ){
 
             this.hasLoadedShader = true;
             var POSITION    = mat.VERTEX_POSITION;
             var UV          = mat.VERTEX_UV;
             var NORMAL      = mat.VERTEX_NORMAL;
 
-            function AssignThisBuffer(name:string, data : number[] ,attrLocation : number , pointSize : number, offset:number, THIS : Mesh ){
+            function AssignThisBuffer(name:string, data : number[] ,attrLocation : number , pointSize : number, offset:number, THIS : GLMesh ){
             
                 let attr = new AttributeInfo( attrLocation, pointSize, offset);
                 AssignBuffer(THIS._buffers[name], data, attr)
@@ -101,9 +100,9 @@ import { Material } from './Material';
             });
         }
 
-        public static createTestMesh(): Mesh{
+        public static createTestMesh(): GLMesh{
 
-            return new Mesh(
+            return new GLMesh(
                 [
                     -1.0,  1.0, -1.0,        -1.0,  1.0,  1.0,        1.0,  1.0,  1.0,        1.0,  1.0, -1.0,
                     -1.0,  1.0,  1.0,        -1.0, -1.0,  1.0,       -1.0, -1.0, -1.0,       -1.0,  1.0, -1.0,
@@ -112,12 +111,12 @@ import { Material } from './Material';
                      1.0,  1.0, -1.0,         1.0, -1.0, -1.0,       -1.0, -1.0, -1.0,       -1.0,  1.0, -1.0,
                     -1.0, -1.0, -1.0,        -1.0, -1.0,  1.0,        1.0, -1.0,  1.0,        1.0, -1.0, -1.0
                 ],[
-                            0, 0,       0, 1,      1, 1,     1, 0,
-                            0, 0,       1, 0,      1, 1,     0, 1,
-                            1, 1,       0, 1,      0, 0,     1, 0,
-                            1, 1,       1, 0,      0, 0,     0, 1,
-                            0, 0,       0, 1,      1, 1,     1, 0,
-                            1, 1,       1, 0,      0, 0,     0, 1
+                    0, 0,       0, 1,      1, 1,     1, 0,
+                    0, 0,       1, 0,      1, 1,     0, 1,
+                    1, 1,       0, 1,      0, 0,     1, 0,
+                    1, 1,       1, 0,      0, 0,     0, 1,
+                    0, 0,       0, 1,      1, 1,     1, 0,
+                    1, 1,       1, 0,      0, 0,     0, 1
                 ],[
                             0,  1,  2,           0,  2,  3,
                             5,  4,  6,           6,  4,  7,
