@@ -168,7 +168,7 @@ import { gl } from "./webGlUtil";
 				vec4 texEmit = texture2D( emit 	,fragTexCord	);
 				vec4 texRough= texture2D( rough	,fragTexCord	);
 
-				gl_FragColor = vec4(texBase.rgb * lightINT, texBase.a) ;
+				gl_FragColor = vec4(texBase.rgb * lightINT, texBase.a) + texEmit ;
 			}
 
 

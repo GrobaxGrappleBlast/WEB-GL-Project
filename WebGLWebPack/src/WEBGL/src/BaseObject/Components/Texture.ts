@@ -51,9 +51,9 @@ import { gl } from "../GL/webGlUtil";
             }
         }
 
-        public bind(){
+        public bind( GL_TEXTURE_ID : number =  gl.TEXTURE0 ){
+            gl.activeTexture(  GL_TEXTURE_ID );
             gl.bindTexture(   gl.TEXTURE_2D, this._texture);
-            gl.activeTexture( gl.TEXTURE0 );
         }
 
         public loadImage(source: TexImageSource){
