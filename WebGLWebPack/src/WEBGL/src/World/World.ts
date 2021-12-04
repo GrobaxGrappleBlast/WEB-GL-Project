@@ -28,10 +28,10 @@ class Node{
     meshIndex : number = null ;    
 
     public constructor(
-        name: string,
-        PARENT_INDEX : number,
-        INDEX : number,
-        transform : mat4
+        name            : string,
+        PARENT_INDEX    : number,
+        INDEX           : number,
+        transform       : mat4
     ){
         this.NAME = name;
         this.PARENT_INDEX = PARENT_INDEX;
@@ -40,15 +40,19 @@ class Node{
     }
 
     ApplyOffset( offset : mat4 , tree : Node[] ){
+ 
         this.transformOffset = this.transform.multiply(offset);
+
+        console.log(this.transformOffset);
+
         if(this.CHILDREN_INDICES)
-        this.CHILDREN_INDICES.forEach( i => {
-            tree[i].ApplyOffset( this.transformOffset , tree );
-        });
+            this.CHILDREN_INDICES.forEach( i => {
+                tree[i].ApplyOffset( this.transformOffset , tree );
+            });
 
-        if(this.meshIndex){
+        if(this.meshIndex)
+            GLOBAL_WORLD.MESHES[this.meshIndex].applyOffset( this.transformOffset);
 
-        }
     }
 
 }
@@ -106,10 +110,6 @@ class JSON_3DSCENE_SORTER{
        
         this.c = 0;
         this.DFL( asset.rootnode );
-
-      
-
-
     }
  
     private c = 0;
@@ -154,13 +154,15 @@ class JSON_3DSCENE_SORTER{
                 c.INODE.name,
                 c.PARENT_INDEX,
                 c.INDEX,
-                new mat4(c.INODE.transformation)
+                //new mat4(c.INODE.transformation)
+                mat4.identity // identity. Because rotations scales and translations are wrontgly already applied at exported. 
             );
 
             // IF MATCHES A MESH LIGHT OR CAMERA OR OTHER; 
             // MESH 
             if(   this.nameMesh[c.INODE.name]   ){
-                newNode.meshIndex = newNode.INDEX;
+                // THIS IS A MESH. 
+                newNode.meshIndex = this.nameMesh[c.INODE.name] ;// newNode.INDEX; // ####################################################
             }
                 
 
@@ -269,10 +271,17 @@ class JSON_3DSCENE_SORTER{
         return this._meshs;
     }
 
-    
     public getMaterials() : GLMaterial[] {
         return this._mats;
     }
+
+    public getNodeTree() : Node[ ]{
+        return this.NodeTree;
+    }
+
+    public getNodeTreeNames() : {[name:string]:number}{
+        return this.nameTree;
+    } 
 }
 
     abstract class AWorld{
@@ -316,8 +325,11 @@ class JSON_3DSCENE_SORTER{
     export var GLOBAL_WORLD:World;
     export class World extends AWorld{
 
-        private MESHES      : Drawable[] = [];
-        private MATERIALS   : GLMaterial[];
+        public MESHES      : Drawable[] = [];
+        public MATERIALS   : GLMaterial[];
+
+        public nameTree : {[name:string]:number} = {}
+        public NodeTree : Node[]; 
 
         private loaded      : boolean = false;
 
@@ -360,20 +372,18 @@ class JSON_3DSCENE_SORTER{
 
             
             this.MATERIALS = sorter.getMaterials();
-
             sorter.getMeshes().forEach( mesh => {
                 var draw = new Drawable();
-                
                 draw.setMesh(mesh, this.MATERIALS[mesh.MaterialIndex] );
-
                 this.MESHES.push(draw );
-
-
-                //this.NodeTree[0].ApplyOffset( mat4.identity, this.NodeTree );
-                //console.log("TREE MADE");
             });
 
             this.loaded = true;
+            this.NodeTree   = sorter.getNodeTree();
+            this.nameTree   = sorter.getNodeTreeNames();
+
+            this.NodeTree[0].ApplyOffset(   mat4.identity , this.NodeTree   );
+            
             /*
             this.reCalc(
                 this.camPos,

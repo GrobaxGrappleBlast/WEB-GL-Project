@@ -2,6 +2,8 @@ import { AttributeInfo } from "../GL/GLBuffer";
 import { gl } from "../GL/webGlUtil";
 import { GLBuffer } from "../GL/GLBuffer"
 import { GLMaterial } from './GLMaterial';
+import { mat4 } from '../../Math/TSM_Library/mat4';
+import { ITransformable } from './ITransformable';
 
 
     abstract class MeshTracker{
@@ -11,10 +13,13 @@ import { GLMaterial } from './GLMaterial';
         public name          : string;
 
     }
-    export class GLMesh extends MeshTracker{
+    export class GLMesh extends MeshTracker implements ITransformable{
 
         private _bufferNames : string[] = [];
         private _buffers :  {[name:string]:GLBuffer } = {}
+
+        private transformLocation : WebGLUniformLocation = null;
+        private transform: mat4 = mat4.identity;
 
         public verticies    : number[];
         public texCoords    : number[];
@@ -82,10 +87,12 @@ import { GLMaterial } from './GLMaterial';
             this._buffers["face"].pushData( this.faceIndecies );
             this._buffers["face"].upload();
             this._buffers["face"].unbind();
+
+            // UNIFORMS 
+            this.transformLocation = mat.LOCAL_VERT_TRANS;
+            this.changeTransform();
         }
 
-
-        
         public bind(){
             this._bufferNames.forEach(name => {
                 if(name == "norm"){
@@ -94,6 +101,7 @@ import { GLMaterial } from './GLMaterial';
                     this._buffers[name].bind();    
                 }                                
             });
+            gl.uniformMatrix4fv(   this.transformLocation   , false, this.transform.values  );
         }
 
         public draw(){
@@ -142,7 +150,11 @@ import { GLMaterial } from './GLMaterial';
             
         }
 
-
+        public changeTransform( transform : mat4 = null){
+            if(transform){
+                this.transform = transform;
+            }               
+        }
 
     }
 

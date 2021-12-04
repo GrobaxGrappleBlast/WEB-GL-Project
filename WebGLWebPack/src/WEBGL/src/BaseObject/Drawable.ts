@@ -5,6 +5,7 @@ import { DefaultShader, GLShader } from "./GL/GLShader";
 import { gl } from "./GL/webGlUtil";
 import { IDrawable } from './IDrawable';
 import { GLMaterial } from './Components/GLMaterial';
+import { mat4 } from '../Math/TSM_Library/mat4';
 
     export class Drawable implements IDrawable{
         private _mesh : GLMesh;
@@ -28,6 +29,11 @@ import { GLMaterial } from './Components/GLMaterial';
             this._mesh = nMesh;
             this._mesh.loadShaderLocations(shader);
         }
+
+        public applyOffset( tranform : mat4 ){
+            this._mesh.changeTransform(tranform);
+        }
+
 
     }
 
