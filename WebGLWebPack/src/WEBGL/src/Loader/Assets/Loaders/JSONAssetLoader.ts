@@ -120,6 +120,8 @@ export enum BitangentEnum {
     NaN = "NaN",
 }
 
+
+export type NodeElement = Rootnode | RootnodeChild;
 export interface Rootnode {
     name:           string;
     transformation: number[];
@@ -130,42 +132,6 @@ export interface RootnodeChild {
     name:           string;
     transformation: number[];
     meshes?:        number[];
-    children?:      PurpleChild[];
+    children?:      RootnodeChild[];
 }
 
-export interface PurpleChild {
-    name:           string;
-    transformation: number[];
-    children:       FluffyChild[];
-}
-
-export interface FluffyChild {
-    name:           string;
-    transformation: number[];
-    children:       TentacledChild[];
-}
-
-export interface TentacledChild {
-    name:           string;
-    transformation: number[];
-    children:       StickyChild[];
-}
-
-export interface StickyChild {
-    name:           string;
-    transformation: number[];
-    children:       IndigoChild[];
-}
-
-export interface IndigoChild {
-    name:           string;
-    transformation: number[];
-    children:       IndecentChild[];
-}
-
-export interface IndecentChild {
-    name:           string;
-    transformation: number[];
-    meshes?:        number[];
-    children?:      IndecentChild[];
-}

@@ -13,7 +13,6 @@ import { GLOBAL_WORLD, World } from './World/World';
             this.init();   
         }
 
-
         public init(): void{
             AssetManager.initialize();
             startClass.canvas = WebGLUtil.initialize("c");
@@ -25,11 +24,6 @@ import { GLOBAL_WORLD, World } from './World/World';
             MessageBus.update(1);
             requestAnimationFrame(this.update.bind(this));
         }
-        
-
-       
-
-
 
 
         public _e : testClass;

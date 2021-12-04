@@ -1,10 +1,17 @@
-import { AttributeInfo } from "../GL/Buffer";
+import { AttributeInfo } from "../GL/GLBuffer";
 import { gl } from "../GL/webGlUtil";
-import { GLBuffer } from "../GL/Buffer"
+import { GLBuffer } from "../GL/GLBuffer"
 import { GLMaterial } from './GLMaterial';
 
-    
-    export class GLMesh {
+
+    abstract class MeshTracker{
+        
+        public Index         : number ;
+        public MaterialIndex : number ;
+        public name          : string;
+
+    }
+    export class GLMesh extends MeshTracker{
 
         private _bufferNames : string[] = [];
         private _buffers :  {[name:string]:GLBuffer } = {}
@@ -14,7 +21,6 @@ import { GLMaterial } from './GLMaterial';
         public faceIndecies : number[];
         public normals : number[];
 
-
         public constructor(
             verticies    : number[]= null,
             texCoords    : number[]= null,
@@ -22,6 +28,7 @@ import { GLMaterial } from './GLMaterial';
             normals : number[]= null,
 
         ){
+            super();
             this.verticies    = verticies    ;
             this.texCoords    = texCoords    ;
             this.faceIndecies = faceIndecies ;

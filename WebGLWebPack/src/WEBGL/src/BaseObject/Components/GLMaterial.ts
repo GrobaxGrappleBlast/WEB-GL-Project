@@ -1,27 +1,34 @@
 import { GLShader, DefaultShader } from '../GL/GLShader';
 import { mat4 } from '../../Math/TSM_Library/mat4';
 import { gl } from '../GL/webGlUtil';
-import { GLTexture } from './GLTexture';
+import { GLTexture, LoadableTexture } from './GLTexture';
 
 abstract class Material_01{
 
     public shader : GLShader;
+    public Index : number;
+    public _meshIndicees : number[] = [];
+    public name():string{return this.shader._name}; 
+
     public constructor( name : string ){
         this.shader = new DefaultShader(name);
-
         this.VERTEX_POSITION    = this.shader.getAttributeLocation(     "a_position"    );
         this.VERTEX_UV          = this.shader.getAttributeLocation(     "a_texCord"     );
         this.VERTEX_NORMAL      = this.shader.getAttributeLocation(     "a_normal"      );
 
+        
         this.UNIFORM_WORLD      = this.shader.getUniformLocation(       "worldMatrix"   );
         this.UNIFORM_CAMERA     = this.shader.getUniformLocation(       "viewMatrix"    );
         this.UNIFORM_PROJECTION = this.shader.getUniformLocation(       "projMatrix"    );
+        //this.OBJECTTRANSFORM    = this.shader.getUniformLocation(       "Ltransform"    );
     }
 
     public VERTEX_POSITION  : number;
     public VERTEX_UV        : number;
     public VERTEX_NORMAL    : number;
+ 
 
+    //public OBJECTTRANSFORM   :WebGLUniformLocation;
     public UNIFORM_WORLD     :WebGLUniformLocation;   
     public UNIFORM_CAMERA    :WebGLUniformLocation;
     public UNIFORM_PROJECTION:WebGLUniformLocation;
@@ -89,9 +96,14 @@ export class GLMaterial extends Material_02{
         texRoug : GLTexture = null,    
     ){
         super(name);
-        this._texBase = texBase; 
-        this._texEmit = texEmit; 
-        this._texRoug = texRoug; 
+        //this._texBase = texBase; 
+        //this._texEmit = texEmit; 
+        //this._texRoug = texRoug; 
+
+        this._texBase =  new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png");
+        this._texEmit =  new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_emissive.png" );
+        this._texRoug =  new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png");
+
 
         this.texInit(this._texBase, "base", 0 ,gl.TEXTURE0);
         this.texInit(this._texEmit, "emit", 1 ,gl.TEXTURE1);

@@ -4,52 +4,276 @@ import { toRadians } from "./../Math/TSM_Library/constants";
 import { mat4 } from "./../Math/TSM_Library/mat4";
 import { vec3 } from "./../Math/TSM_Library/vec3";
 import { FileRequest } from '../Loader/FileReuqest';
-import { JSON3D } from "../Loader/Assets/Loaders/JSONAssetLoader";
+import { JSON3D, Material, Mesh, Light, Camera, NodeElement } from '../Loader/Assets/Loaders/JSONAssetLoader';
 import { GLMesh } from '../BaseObject/Components/GLMesh';
 import { Drawable, DefaultCube } from '../BaseObject/Drawable';
 import { DefaultShader, GLShader } from '../BaseObject/GL/GLShader';
 import { GLTexture, LoadableTexture } from '../BaseObject/Components/GLTexture';
 import { GLMaterial } from '../BaseObject/Components/GLMaterial';
+import { GLLight } from '../BaseObject/Components/GLLIght';
+import { GLCamera } from '../BaseObject/Components/GLCamera';
+import { Euler, Quaternion } from 'three';
 
-   /*
 
-    export class Quaternion {
-        public w : number;
-        public x : number;
-        public y : number;
-        public z : number;
-        public constructor(){}
-    };
+class Node{
 
-    export class EulerAngles {
-        public roll : number;
-        public pitch: number;
-        public yaw: number;
-        public constructor(){}
-    };
+    PARENT_INDEX    : number;
+    CHILDREN_INDICES: number[];
+    INDEX           : number;
+    NAME            : string;
 
-    export function ToEulerAngles(q:Quaternion):EulerAngles {
-        var angles: EulerAngles = new EulerAngles();
+    transformOffset : mat4;
+    transform       : mat4;
 
-        // roll (x-axis rotation)
-        var sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
-        var cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
-        angles.roll = std::atan2(sinr_cosp, cosr_cosp);
+    meshIndex : number = null ;    
 
-        // pitch (y-axis rotation)
-        var sinp = 2 * (q.w * q.y - q.z * q.x);
-        if (std::abs(sinp) >= 1)
-            angles.pitch = std::copysign(M_PI / 2, sinp); // use 90 degrees if out of range
-        else
-            angles.pitch = std::asin(sinp);
+    public constructor(
+        name: string,
+        PARENT_INDEX : number,
+        INDEX : number,
+        transform : mat4
+    ){
+        this.NAME = name;
+        this.PARENT_INDEX = PARENT_INDEX;
+        this.INDEX = INDEX;
+        this.transform = transform;
+    }
 
-        // yaw (z-axis rotation)
-        var siny_cosp = 2 * (q.w * q.z + q.x * q.y);
-        var cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
-        angles.yaw = std::atan2(siny_cosp, cosy_cosp);
+    ApplyOffset( offset : mat4 , tree : Node[] ){
+        this.transformOffset = this.transform.multiply(offset);
+        if(this.CHILDREN_INDICES)
+        this.CHILDREN_INDICES.forEach( i => {
+            tree[i].ApplyOffset( this.transformOffset , tree );
+        });
 
-        return angles;
+        if(this.meshIndex){
+
+        }
+    }
+
+}
+
+
+
+
+class JSON_3DSCENE_SORTER{
+    
+    private ASSET : JSON3D;
+    
+    private nameMat : {[name:string]:number} = {};
+    private _mats : GLMaterial[];
+
+    private nameMesh : {[name:string]:number} = {};
+    private _meshs: GLMesh[];
+
+    private nameTree : {[name:string]:number} = {}
+    private NodeTree : Node[]; 
+
+    public constructor(asset : JSON3D){
+        this.ASSET = asset;
+
+        this._mats = new Array<GLMaterial>  (this.ASSET.materials.length);
+        this._meshs= new Array<GLMesh>      (this.ASSET.meshes.length   );
+
+        var c = 0;
+        this.ASSET.materials.forEach(  imat => {
+            this._mats[ c ] = this.OperateMaterial(imat) ;
+            this.nameMat[ this._mats[c].name() ] = c;
+            this._mats[ c ].Index = c++;
+            
+        });
+
+        c = 0;
+        this.ASSET.meshes.forEach(  imesh => {
+            var mesh = this.OperateMesh(imesh);
+            
+            mesh.MaterialIndex = imesh.materialindex;
+            mesh.Index = c ;
+            mesh.name = imesh.name;
+            this.nameMesh[imesh.name] = c;
+
+            this._mats[imesh.materialindex]._meshIndicees.push(c);
+            this._meshs[c++] = mesh;
+        });
+
+        var arrName : string[] = [];
+        asset.animations.forEach(anim => {
+            arrName.push(anim.name);
+        }); 
+
+        var count : number = this.DFC(this.ASSET.rootnode);
+        this.NodeTree = new Array<Node>(count);
+       
+        this.c = 0;
+        this.DFL( asset.rootnode );
+
+      
+
+
+    }
+ 
+    private c = 0;
+
+
+    private DFC( inode : NodeElement ) : number {
+        
+        var counter = 0;
+
+        if(inode.children)
+        inode.children.forEach(e => {
+            counter += this.DFC(e);
+        });
+
+        return counter + 1;
+    }
+
+    private DFL( INODE : NodeElement ):void {
+        class semiNode{ 
+            public PARENT_INDEX : number;
+            public INDEX : number ;
+            public INODE : NodeElement
+            public constructor(){}
+        };
+        var que : semiNode[] = [];
+
+        let FIRST : semiNode = new semiNode();
+        FIRST.PARENT_INDEX  = null  ;
+        FIRST.INDEX         = 0     ;
+        FIRST.INODE         = INODE ; 
+
+        que.push(FIRST)
+        var indexCounter = 1;
+
+        var RUNS = true;
+        while( RUNS ){
+
+            var c = que.pop();
+        
+            // CREATE A NEW NODE 
+            var newNode = new Node(
+                c.INODE.name,
+                c.PARENT_INDEX,
+                c.INDEX,
+                new mat4(c.INODE.transformation)
+            );
+
+            // IF MATCHES A MESH LIGHT OR CAMERA OR OTHER; 
+            // MESH 
+            if(   this.nameMesh[c.INODE.name]   ){
+                newNode.meshIndex = newNode.INDEX;
+            }
+                
+
+            // IF CHILD NODES 
+            if(c.INODE.children){
+                
+                newNode.CHILDREN_INDICES = [];
+                c.INODE.children.forEach( e => {
+                    newNode.CHILDREN_INDICES.push( indexCounter++ );
+                });
+
+                for (let i = 0; i < c.INODE.children.length; i++) {
+                   // var addition : { i : number , a : number  , node : NodeElement} = { c.INDEX , newNode.CHILDREN_INDICES[i]  , INODE.children[i]}
+                    var S : semiNode = new semiNode();
+                    S.PARENT_INDEX  = c.INDEX;
+                    S.INDEX         = newNode.CHILDREN_INDICES[i];
+                    S.INODE         = c.INODE.children[i]; 
+                    que.push( S );
+                }
+            }
+        
+            // 
+            this.nameTree[  INODE.name  ]   = c.INDEX;
+            this.NodeTree[  c.INDEX     ]   = newNode;
+            if(que.length == 0){
+                RUNS = false;
+            }
+
+        }
+    }
+    
+    /*private  fromQtoV( x:number, y:number, z:number, w:number ): vec3{
+        var Q = new Quaternion(x,y,z,w);
+        var rtrn : Euler = new Euler();
+        rtrn.setFromQuaternion(Q, Euler.DefaultOrder);
+        var VECTOR = rtrn.toVector3();
+        return new vec3([VECTOR.x , VECTOR.y, VECTOR.z ]);
     }*/
+    /*
+    private BFL( node : NodeElement, outNode : Node, PARENT : Node = null ,hasRootNode : boolean = false){
+            
+
+            // CHECK IF THIS 
+
+            var NewNode : Node;
+            var c = 0;
+
+            if(node.children)
+            {
+                if(  false  ){//! (node.children.length > 1)   ){
+                    //this.BFL( node.children[0] , outNode,outNode, true );
+                }else{
+                    // IS NOT LEAF NODE
+                    var que = node.children;
+                    c = 0;
+                    que.forEach( child => {
+                        
+                        NewNode = new Node(
+                            child.name,
+                            new mat4(child.transformation)
+                        );
+
+                        NewNode.index = c++;
+                        outNode.addChild(NewNode);
+
+                    });
+                    for (let i = 0; i < que.length; i++) {
+                        this.BFL(que[i], outNode.children[i], outNode,true);
+                    }
+                    outNode.type=1;
+                }
+            }else{
+                // IS LEAF NODE 
+                outNode.type = 2;
+                if( outNode.name.includes("Material") )
+                    PARENT.children.splice(outNode.index,1); 
+                    if(PARENT.children.length == 0)
+                        PARENT.children = null;
+            }
+            
+    }*/
+
+
+    private OperateMaterial( mat: Material):GLMaterial{
+        return new GLMaterial("default");
+    }
+
+    private OperateMesh( mesh: Mesh):GLMesh{
+        return new GLMesh(
+            mesh.vertices,
+            mesh.texturecoords[0],
+            [].concat.apply( [] , mesh.faces ),
+            mesh.normals
+        );
+    }
+
+    private OperateLight( light: Light):GLLight{
+        return new GLLight();
+    }
+
+    private OperateCameras( cam: Camera ):GLCamera{
+        return new GLCamera();
+    }
+
+    public getMeshes() : GLMesh[] {
+        return this._meshs;
+    }
+
+    
+    public getMaterials() : GLMaterial[] {
+        return this._mats;
+    }
+}
 
     abstract class AWorld{
         public camPos      = new vec3([-100,0,0]);
@@ -92,48 +316,65 @@ import { GLMaterial } from '../BaseObject/Components/GLMaterial';
     export var GLOBAL_WORLD:World;
     export class World extends AWorld{
 
-        private _assets : Drawable[] = [];
-        private _asset : Drawable;
-        private _mat : GLMaterial;
-        
+        private MESHES      : Drawable[] = [];
+        private MATERIALS   : GLMaterial[];
+
+        private loaded      : boolean = false;
 
         public bind(): void{
-            this._mat.use();
-            this._mat.updateUniform_World(      GLOBAL_WORLD.worldMatrix);
-            this._mat.updateUniform_Camera(     GLOBAL_WORLD.viewMatrix );
-            this._mat.updateUniform_Projection( GLOBAL_WORLD.projMatrix )
-            this._mat.bind();
+            if(this.loaded)
+            this.MATERIALS.forEach( mat => {
+                mat.use();
+                mat.updateUniform_World(      GLOBAL_WORLD.worldMatrix);
+                mat.updateUniform_Camera(     GLOBAL_WORLD.viewMatrix );
+                mat.updateUniform_Projection( GLOBAL_WORLD.projMatrix )
+                mat.bind();
+            });
         }
 
         public draw(): void {
-            this.bind();
-            this._assets.forEach(a => {
-                a.draw();
-            });
-            GLOBAL_WORLD.rotateWorld(0.005)
+            if(this.loaded){
+                this.bind();
+                var counter = 0;
+                this.MATERIALS.forEach( mat => {
+                    mat.use();
+                    mat.bind();
+                    mat._meshIndicees.forEach( index => {
+                        this.MESHES[index].draw();
+                    });
+                });
+                GLOBAL_WORLD.rotateWorld(0.005)
+            }
         }
 
         public constructor(){
             super();
-            this._mat = new GLMaterial(
-                "default",
-                new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png"),
-                new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_emissive.png"),
-                new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png")
-            );
             GLOBAL_WORLD = this;
-
-            this._asset = new DefaultCube( this._mat);
             var fr = new FileRequest("resources\\3d\\broken_steampunk_clock\\test.json", this);
         }
 
         public onFileRecieved( asset : any){
             
-
-            console.log("ON FILE RECIEVED ");
             var ASSET : JSON3D = asset.data;        
-                    
+            var sorter : JSON_3DSCENE_SORTER = new JSON_3DSCENE_SORTER(ASSET);
+
             
+            this.MATERIALS = sorter.getMaterials();
+
+            sorter.getMeshes().forEach( mesh => {
+                var draw = new Drawable();
+                
+                draw.setMesh(mesh, this.MATERIALS[mesh.MaterialIndex] );
+
+                this.MESHES.push(draw );
+
+
+                //this.NodeTree[0].ApplyOffset( mat4.identity, this.NodeTree );
+                //console.log("TREE MADE");
+            });
+
+            this.loaded = true;
+            /*
             this.reCalc(
                 this.camPos,
                 new vec3([
@@ -178,7 +419,7 @@ import { GLMaterial } from '../BaseObject/Components/GLMaterial';
             }
 
             console.log("LENGTH HAS BECOME " + this._assets.length);
-            
+            */
         }    
     }
 

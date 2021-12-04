@@ -132,6 +132,7 @@ import { gl } from "./webGlUtil";
 			varying vec3 frag_normal;
 			varying vec2 fragTexCord;
 
+			
 			uniform mat4 worldMatrix;
 			uniform mat4 viewMatrix;
 			uniform mat4 projMatrix;
