@@ -16,6 +16,12 @@ import { vec4 } from "./vec4";
 
         static readonly identity = new mat4().setIdentity()
 
+        static getIdentity(): mat4{
+            var mat : mat4 = new mat4();
+            mat.setIdentity();
+            return mat;
+        }
+
         public at(index: number): number {
             return this.values[index]
         }
@@ -530,7 +536,7 @@ import { vec4 } from "./vec4";
 
         public static lookAt(position: vec3, target: vec3, up: vec3 = vec3.up): mat4 {
             if (position.equals(target)) {
-                return this.identity
+                return this.getIdentity();
             }
 
             const z = vec3.difference(position, target).normalize()

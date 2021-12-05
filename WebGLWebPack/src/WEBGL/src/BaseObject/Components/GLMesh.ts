@@ -4,6 +4,7 @@ import { GLBuffer } from "../GL/GLBuffer"
 import { GLMaterial } from './GLMaterial';
 import { mat4 } from '../../Math/TSM_Library/mat4';
 import { ITransformable } from './ITransformable';
+import { vec3 } from "../../Math/TSM_Library/vec3";
 
 
     abstract class MeshTracker{
@@ -19,13 +20,19 @@ import { ITransformable } from './ITransformable';
         private _buffers :  {[name:string]:GLBuffer } = {}
 
         private transformLocation : WebGLUniformLocation = null;
-        private transform: mat4 = mat4.identity;
+        private transform: mat4 = mat4.getIdentity();
 
         public verticies    : number[];
+        public origVerticies: number[];
         public texCoords    : number[];
         public faceIndecies : number[];
         public normals : number[];
 
+
+        public POSITION    : number; //mat.VERTEX_POSITION;
+        public UV          : number;//mat.VERTEX_UV;
+        public NORMAL      : number;//mat.VERTEX_NORMAL;
+        
         public constructor(
             verticies    : number[]= null,
             texCoords    : number[]= null,
@@ -35,6 +42,7 @@ import { ITransformable } from './ITransformable';
         ){
             super();
             this.verticies    = verticies    ;
+            this.origVerticies=verticies;
             this.texCoords    = texCoords    ;
             this.faceIndecies = faceIndecies ;
             this.normals      = normals      ;
@@ -53,34 +61,35 @@ import { ITransformable } from './ITransformable';
         }
         
         private hasLoadedShader = false;
+        private AssignThisBuffer(name:string, data : number[] ,attrLocation : number , pointSize : number, offset:number){
+            
+            let attr = new AttributeInfo( attrLocation, pointSize, offset);
+            AssignBuffer(this._buffers[name], data, attr)
+
+            function AssignBuffer(buffer : GLBuffer, data : number[] , attr : AttributeInfo):void{
+                buffer.bind();
+                buffer.addAttribute(attr);
+                buffer.pushData( data );
+                buffer.upload();
+                buffer.unbind();
+            }
+        }
         public loadShaderLocations( mat :GLMaterial ){
 
             this.hasLoadedShader = true;
-            var POSITION    = mat.VERTEX_POSITION;
-            var UV          = mat.VERTEX_UV;
-            var NORMAL      = mat.VERTEX_NORMAL;
+            this.POSITION    = mat.VERTEX_POSITION;
+            this.UV          = mat.VERTEX_UV;
+            this.NORMAL      = mat.VERTEX_NORMAL;
 
-            function AssignThisBuffer(name:string, data : number[] ,attrLocation : number , pointSize : number, offset:number, THIS : GLMesh ){
             
-                let attr = new AttributeInfo( attrLocation, pointSize, offset);
-                AssignBuffer(THIS._buffers[name], data, attr)
-
-                function AssignBuffer(buffer : GLBuffer, data : number[] , attr : AttributeInfo):void{
-                    buffer.bind();
-                    buffer.addAttribute(attr);
-                    buffer.pushData( data );
-                    buffer.upload();
-                    buffer.unbind();
-                }
-            }
          
             // ALL ATTRIBTES THAT HAS ATTRIBUTE DATA 
-            AssignThisBuffer( "loc" , this.verticies , POSITION , 3 , 0 , this);
+            this.AssignThisBuffer( "loc" , this.verticies , this.POSITION , 3 , 0 );
         
-            AssignThisBuffer( "uv" , this.texCoords , UV , 2 , 0 ,this);
+            this.AssignThisBuffer( "uv" , this.texCoords , this.UV , 2 , 0 );
 
             if(this.normals != null )
-                AssignThisBuffer( "norm", this.normals, NORMAL, 3 ,0,this)
+                this.AssignThisBuffer( "norm", this.normals, this.NORMAL, 3 ,0)
 
             // FACE INDICIES DOESNOT HAVE ATTRIBUTE DATA .. WHO KNOWS WHY
             this._buffers["face"].bind();
@@ -89,7 +98,7 @@ import { ITransformable } from './ITransformable';
             this._buffers["face"].unbind();
 
             // UNIFORMS 
-            this.transformLocation = mat.LOCAL_VERT_TRANS;
+            //this.transformLocation = mat.LOCAL_VERT_TRANS;
             this.changeTransform();
         }
 
@@ -101,7 +110,7 @@ import { ITransformable } from './ITransformable';
                     this._buffers[name].bind();    
                 }                                
             });
-            gl.uniformMatrix4fv(   this.transformLocation   , false, this.transform.values  );
+            //gl.uniformMatrix4fv(   this.transformLocation   , false, this.transform.values  );
         }
 
         public draw(){
@@ -153,7 +162,30 @@ import { ITransformable } from './ITransformable';
         public changeTransform( transform : mat4 = null){
             if(transform){
                 this.transform = transform;
-            }               
+                
+                for (let i = 0; i < this.origVerticies.length; i += 3 ) {
+                    
+                    var vecI = this.transform.multiplyVec3(new vec3([
+                        this.origVerticies[i],
+                        this.origVerticies[i+1],
+                        this.origVerticies[i+2]
+                    ]));
+                    
+                    console.log("\n--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ");
+                    
+                    this.verticies[i+0] = vecI.x;
+                    this.verticies[i+1] = vecI.y;
+                    this.verticies[i+2] = vecI.z;
+
+                }
+                // ALL ATTRIBTES THAT HAS ATTRIBUTE DATA 
+                var buffer = this._buffers["loc"];
+                buffer.bind();
+                buffer.setData(this.verticies);
+                buffer.upload();
+                buffer.unbind();
+                //this.AssignThisBuffer( "loc" , this.verticies , this.POSITION , 3 , 0 );
+            }
         }
 
     }

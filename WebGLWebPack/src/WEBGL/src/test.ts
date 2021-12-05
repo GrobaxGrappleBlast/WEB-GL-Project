@@ -277,7 +277,7 @@ import { vec3 } from "./Math/TSM_Library/vec3";
             this.matViewUniformLocation  = this.gl.getUniformLocation(this.program, 'mView');
             this.matProjUniformLocation  = this.gl.getUniformLocation(this.program, 'mProj');
             
-            this.worldMatrix = mat4.identity;
+            this.worldMatrix = mat4.getIdentity();
             this.viewMatrix  = mat4.lookAt( this._camPos, this._lookAt, this._zDirection);
             this.projMatrix  = mat4.perspective( toRadians(45), this.canvas.clientWidth / this.canvas.clientHeight, 0.1, 1000.0 );
 
