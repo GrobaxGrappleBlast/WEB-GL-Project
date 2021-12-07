@@ -2,11 +2,13 @@ import { AssetManager } from "../AssetManager";
 import { IAsset } from "../IAsset";
 import { IAssetLoader } from "./IAssetLoader";
 import { GLMesh } from '../../../BaseObject/Components/GLMesh';
-import { GLMaterial } from "../../../BaseObject/Components/GLMaterial";
+import { GLMaterial } from '../../../BaseObject/Components/GLMaterial';
 import { GLLight } from '../../../BaseObject/Components/GLLIght';
 import { GLCamera } from '../../../BaseObject/Components/GLCamera';
 import { mat4 } from '../../../Math/TSM_Library/mat4';
 import { Node } from '../../../World/Node';
+import { GLAnimationBundle } from '../../../BaseObject/Components/GLAnimation';
+import { HashArray } from '../../../BaseObject/HashArray';
 
 
 export class JSONAsset implements IAsset{
@@ -52,8 +54,10 @@ export class JSON_3DSCENE_SORTER{
     
     private ASSET : JSON3D;
     
-    private nameMat : {[name:string]:number} = {};
-    private _mats : GLMaterial[];
+    private matArr : HashArray<GLMaterial> = new HashArray<GLMaterial>();
+
+    //private nameMat : {[name:string]:number} = {};
+    //private _mats : GLMaterial[];
 
     private nameMesh : {[name:string]:number} = {};
     private _meshs: GLMesh[];
@@ -64,17 +68,28 @@ export class JSON_3DSCENE_SORTER{
     public constructor(asset : JSON3D){
         this.ASSET = asset;
 
-        this._mats = new Array<GLMaterial>  (this.ASSET.materials.length);
+
+        console.log("ASSET CREATUIN HAPPENS HERE  ");
+
+        //this._mats = new Array<GLMaterial>  (this.ASSET.materials.length);
         this._meshs= new Array<GLMesh>      (this.ASSET.meshes.length   );
 
+        // MATERIALS 
         var c = 0;
         this.ASSET.materials.forEach(   imat => {
-            this._mats[ c ] = this.OperateMaterial(imat) ;
-            this.nameMat[ this._mats[c].name() ] = c;
-            this._mats[ c ].Index = c++;
+            var material = this.OperateMaterial(imat) ;
+            this.matArr.add( 
+                material,
+                "default" + c++ + ""
+            )
+
+            //this._mats[ c ] = this.OperateMaterial(imat) ;
+           // this.nameMat[ this._mats[c].name() ] = c;
+           // this._mats[ c ].Index = c++;
             
         });
 
+        // MESHES 
         c = 0;
         this.ASSET.meshes.forEach(      imesh => {
             var mesh = this.OperateMesh(imesh);
@@ -84,21 +99,29 @@ export class JSON_3DSCENE_SORTER{
             mesh.name = imesh.name;
             this.nameMesh[imesh.name] = c;
 
-            this._mats[imesh.materialindex]._meshIndicees.push(c);
+            this.matArr.get(imesh.materialindex)._meshIndicees.push(c);
+            //this._mats[imesh.materialindex]._meshIndicees.push(c);
             this._meshs[c++] = mesh;
         });
 
+        // animations
+        //this.OperateAnimation(asset.animations);
+        /*
         var arrName : string[] = [];
         asset.animations.forEach(       anim => {
             arrName.push(anim.name);
         }); 
+        */
 
         // LOAD MATERIALS INTO MESHES 
-        this._mats.forEach(   MAT =>  {
+        console.log(" MATERIAL INDICIES ");
+        this.matArr.forEach( MAT => {
             MAT._meshIndicees.forEach( meshIndex => {
+                console.log("LOGGED index : " + meshIndex);
                 this._meshs[meshIndex].loadShaderLocations(MAT);
             });
         });
+
 
         var count : number = this.DFC(this.ASSET.rootnode);
         this.NodeTree = new Array<Node>(count);
@@ -188,6 +211,9 @@ export class JSON_3DSCENE_SORTER{
         }
     }
 
+    private OperateAnimation( anims : Animation[] ){
+        var  a : GLAnimationBundle = new GLAnimationBundle( anims , this );
+    }
 
     private OperateMaterial( mat: Material):GLMaterial{
         return new GLMaterial("default");
@@ -215,11 +241,16 @@ export class JSON_3DSCENE_SORTER{
     }
 
     public getMaterials() : GLMaterial[] {
-        return this._mats;
+        //return this._mats;
+        return this.matArr.getElemList();
     }
 
     public getNodeTree() : Node[ ]{
         return this.NodeTree;
+    }
+
+    public nameMeshlist() : {[name:string]:number} {
+        return this.nameMesh;
     }
 
     public getNodeTreeNames() : {[name:string]:number}{
