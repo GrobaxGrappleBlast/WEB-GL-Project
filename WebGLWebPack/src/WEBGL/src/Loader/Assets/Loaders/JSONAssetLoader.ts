@@ -54,23 +54,12 @@ export class JSON_3DSCENE_SORTER{
     
     private ASSET : JSON3D;
     
-    private matArr : HashArray<GLMaterial>  = new HashArray<GLMaterial>()   ;
-    private meshArr: HashArray<GLMesh>      = new HashArray<GLMesh>()       ;
-
-    //private nameMesh : {[name:string]:number} = {};
-    //private _meshs: GLMesh[];
-
-    private nameTree : {[name:string]:number} = {}
-    private NodeTree : Node[]; 
+    private matArr  : HashArray<GLMaterial>  = new HashArray<GLMaterial>()   ;
+    private meshArr : HashArray<GLMesh>      = new HashArray<GLMesh>()       ;
+    private nodeTree: HashArray<Node>        = new HashArray<Node>()         ;
 
     public constructor(asset : JSON3D){
         this.ASSET = asset;
-
-
-        console.log("ASSET CREATUIN HAPPENS HERE  ");
-
-       
-        //this._meshs= new Array<GLMesh>      (this.ASSET.meshes.length   );
 
         // MATERIALS 
         var c = 0;
@@ -115,7 +104,6 @@ export class JSON_3DSCENE_SORTER{
 
 
         var count : number = this.DFC(this.ASSET.rootnode);
-        this.NodeTree = new Array<Node>(count);
         this.c = 0;
         this.DFL( asset.rootnode );
     }
@@ -142,6 +130,9 @@ export class JSON_3DSCENE_SORTER{
             public INODE : NodeElement
             public constructor(){}
         };
+
+        // DEPTH FIRST LOOKUP : not a search, but a look up all elements and instantiate nodes for em.
+
         var que : semiNode[] = [];
 
         let FIRST : semiNode = new semiNode();
@@ -193,8 +184,7 @@ export class JSON_3DSCENE_SORTER{
             }
         
             // 
-            this.nameTree[  INODE.name  ]   = c.INDEX;
-            this.NodeTree[  c.INDEX     ]   = newNode;
+            this.nodeTree.add( newNode ,INODE.name)
             if(que.length == 0){
                 RUNS = false;
             }
@@ -237,7 +227,7 @@ export class JSON_3DSCENE_SORTER{
     }
 
     public getNodeTree() : Node[ ]{
-        return this.NodeTree;
+        return this.nodeTree.getElemList();
     }
 
 }
