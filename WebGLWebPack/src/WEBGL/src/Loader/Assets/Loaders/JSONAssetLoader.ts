@@ -54,13 +54,11 @@ export class JSON_3DSCENE_SORTER{
     
     private ASSET : JSON3D;
     
-    private matArr : HashArray<GLMaterial> = new HashArray<GLMaterial>();
+    private matArr : HashArray<GLMaterial>  = new HashArray<GLMaterial>()   ;
+    private meshArr: HashArray<GLMesh>      = new HashArray<GLMesh>()       ;
 
-    //private nameMat : {[name:string]:number} = {};
-    //private _mats : GLMaterial[];
-
-    private nameMesh : {[name:string]:number} = {};
-    private _meshs: GLMesh[];
+    //private nameMesh : {[name:string]:number} = {};
+    //private _meshs: GLMesh[];
 
     private nameTree : {[name:string]:number} = {}
     private NodeTree : Node[]; 
@@ -71,8 +69,8 @@ export class JSON_3DSCENE_SORTER{
 
         console.log("ASSET CREATUIN HAPPENS HERE  ");
 
-        //this._mats = new Array<GLMaterial>  (this.ASSET.materials.length);
-        this._meshs= new Array<GLMesh>      (this.ASSET.meshes.length   );
+       
+        //this._meshs= new Array<GLMesh>      (this.ASSET.meshes.length   );
 
         // MATERIALS 
         var c = 0;
@@ -82,26 +80,21 @@ export class JSON_3DSCENE_SORTER{
                 material,
                 "default" + c++ + ""
             )
-
-            //this._mats[ c ] = this.OperateMaterial(imat) ;
-           // this.nameMat[ this._mats[c].name() ] = c;
-           // this._mats[ c ].Index = c++;
             
         });
 
         // MESHES 
         c = 0;
         this.ASSET.meshes.forEach(      imesh => {
-            var mesh = this.OperateMesh(imesh);
             
+            var mesh = this.OperateMesh(imesh);
             mesh.MaterialIndex = imesh.materialindex;
             mesh.Index = c ;
             mesh.name = imesh.name;
-            this.nameMesh[imesh.name] = c;
 
+            this.meshArr.add(mesh, imesh.name);
             this.matArr.get(imesh.materialindex)._meshIndicees.push(c);
-            //this._mats[imesh.materialindex]._meshIndicees.push(c);
-            this._meshs[c++] = mesh;
+            c++;
         });
 
         // animations
@@ -114,11 +107,9 @@ export class JSON_3DSCENE_SORTER{
         */
 
         // LOAD MATERIALS INTO MESHES 
-        console.log(" MATERIAL INDICIES ");
         this.matArr.forEach( MAT => {
-            MAT._meshIndicees.forEach( meshIndex => {
-                console.log("LOGGED index : " + meshIndex);
-                this._meshs[meshIndex].loadShaderLocations(MAT);
+            MAT._meshIndicees.forEach( i => {
+                this.meshArr.get(i).loadShaderLocations(MAT);
             });
         });
 
@@ -177,9 +168,9 @@ export class JSON_3DSCENE_SORTER{
 
             // IF MATCHES A MESH LIGHT OR CAMERA OR OTHER; 
             // MESH 
-            if(   this.nameMesh[c.INODE.name]   ){
+            if(    this.meshArr.hasIndex(c.INODE.name) ){
                 // THIS IS A MESH. 
-                newNode.meshIndex = this.nameMesh[c.INODE.name] ;// newNode.INDEX; // ####################################################
+                newNode.meshIndex = this.meshArr.getIndex(c.INODE.name)
             }
                 
 
@@ -237,7 +228,7 @@ export class JSON_3DSCENE_SORTER{
     }
 
     public getMeshes() : GLMesh[] {
-        return this._meshs;
+        return this.meshArr.getElemList();
     }
 
     public getMaterials() : GLMaterial[] {
@@ -249,13 +240,6 @@ export class JSON_3DSCENE_SORTER{
         return this.NodeTree;
     }
 
-    public nameMeshlist() : {[name:string]:number} {
-        return this.nameMesh;
-    }
-
-    public getNodeTreeNames() : {[name:string]:number}{
-        return this.nameTree;
-    } 
 }
 
 
