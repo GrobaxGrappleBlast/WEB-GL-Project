@@ -1,11 +1,11 @@
 import { gl } from "./../BaseObject/GL/webGlUtil";
-import { IDrawable } from "./../BaseObject/IDrawable";
+
 import { toRadians } from "./../Math/TSM_Library/constants";
 import { vec3 } from "./../Math/TSM_Library/vec3";
 import { FileRequest } from '../Loader/FileReuqest';
 import { JSON3D, Material, Mesh, Light, Camera, NodeElement, JSON_3DSCENE_SORTER } from '../Loader/Assets/Loaders/JSONAssetLoader';
 import { GLMesh } from '../BaseObject/Components/GLMesh';
-import { Drawable, DefaultCube } from '../BaseObject/Drawable';
+
 import { DefaultShader, GLShader } from '../BaseObject/GL/GLShader';
 import { GLTexture, LoadableTexture } from '../BaseObject/Components/GLTexture';
 import { GLMaterial } from '../BaseObject/Components/GLMaterial';
@@ -14,6 +14,7 @@ import { GLCamera } from '../BaseObject/Components/GLCamera';
 import { Euler, Quaternion } from 'three';
 import { Node } from './Node';
 import { mat4 } from '../Math/TSM_Library/mat4';
+import { GLAnimation } from '../BaseObject/Components/GLAnimation';
 
 
 
@@ -33,9 +34,7 @@ import { mat4 } from '../Math/TSM_Library/mat4';
             this.viewMatrix   = mat4.lookAt( camPos, lookAt, up);
         }
 
-        constructor(){
-        }
-        
+
         getWorldMatrix():  mat4 {
             return this.worldMatrix;
         }
@@ -58,15 +57,16 @@ import { mat4 } from '../Math/TSM_Library/mat4';
     };
 
     export var GLOBAL_WORLD:World;
+
     export class World extends AWorld{
 
         public MESHES      : GLMesh[] = [];
         public MATERIALS   : GLMaterial[];
+        public NodeTree    : Node[]; 
 
-        public nameTree : {[name:string]:number} = {}
-        public NodeTree : Node[]; 
-
+        public animations : GLAnimation[] ;
         private loaded      : boolean = false;
+
 
         public bind(): void{
             if(this.loaded)
@@ -80,7 +80,11 @@ import { mat4 } from '../Math/TSM_Library/mat4';
         }
 
         public draw(): void {
-            if(this.loaded){
+            console.log("ON DRAW");
+            if(this.loaded == true)
+                this.playAnimation();
+
+            if(this.loaded == true){
                 this.bind();
                 var counter = 0;
                 this.MATERIALS.forEach( mat => {
@@ -99,27 +103,50 @@ import { mat4 } from '../Math/TSM_Library/mat4';
             super();
             GLOBAL_WORLD = this;
             var fr = new FileRequest("resources\\3d\\broken_steampunk_clock\\test.json", this);
+            this.chosenAnim = 0;
         }
 
         public onFileRecieved( asset : any){
-            
+
+            console.log("STARTING ");
+
             var sorter : JSON_3DSCENE_SORTER = asset.data;        
             
             this.MATERIALS = sorter.getMaterials();
 
             this.MESHES = sorter.getMeshes();
 
-            this.loaded = true;
-            this.NodeTree   = sorter.getNodeTree();
-            this.nameTree   = sorter.getNodeTreeNames();
+            console.log("MESHES DEFINED NOW ");
 
+            this.NodeTree   = sorter.getNodeTree();
+
+            this.animations = sorter.getAnimations();
+
+
+           // this.chooseAnimation(  0 );
+            this.loaded = true;
+
+            GLOBAL_WORLD = this;
+
+            
             var I : mat4 = new mat4();
-            var offset = I.setIdentity().translate(new vec3([100.0,0.0,0.0]) );
-            console.log("APPLYING OFFSET FOR MESH ");
-            this.NodeTree[63].ApplyOffset( offset   , this.NodeTree   );    
-      
+            var offset = I.setIdentity().translate(new vec3([200.0,200.0,0.0]) );
+            this.NodeTree[0].ApplyOffset( offset   , this.NodeTree   );    
+            
         }
         
+        private chosenAnim : number = 0;
+        private frame : number = 0;
+
+        public playAnimation( ){
+            if( this.frame > this.animations[this.chosenAnim].getEnd() ){
+                this.frame = this.animations[this.chosenAnim].getStart();
+            }
+
+           // this.animations[this.chosenAnim].playKeyFrame(this.frame++);
+            
+        }
+
         
     }
 

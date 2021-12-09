@@ -7,8 +7,9 @@ import { GLLight } from '../../../BaseObject/Components/GLLIght';
 import { GLCamera } from '../../../BaseObject/Components/GLCamera';
 import { mat4 } from '../../../Math/TSM_Library/mat4';
 import { Node } from '../../../World/Node';
-import { GLAnimationBundle } from '../../../BaseObject/Components/GLAnimation';
+import { GLAnimationBundle, GLAnimation } from '../../../BaseObject/Components/GLAnimation';
 import { HashArray } from '../../../BaseObject/HashArray';
+import { vec3 } from "../../../Math/TSM_Library/vec3";
 
 
 export class JSONAsset implements IAsset{
@@ -54,9 +55,12 @@ export class JSON_3DSCENE_SORTER{
     
     private ASSET : JSON3D;
     
-    private matArr  : HashArray<GLMaterial>  = new HashArray<GLMaterial>()   ;
-    private meshArr : HashArray<GLMesh>      = new HashArray<GLMesh>()       ;
-    private nodeTree: HashArray<Node>        = new HashArray<Node>()         ;
+    private matArr  : HashArray<GLMaterial> = new HashArray<GLMaterial>()   ;
+    private meshArr : HashArray<GLMesh>     = new HashArray<GLMesh>()       ;
+    private nodeTree: HashArray<Node>       = new HashArray<Node>()         ;
+    private Animations: GLAnimation[]       = [];
+
+// ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- 
 
     public constructor(asset : JSON3D){
         this.ASSET = asset;
@@ -69,7 +73,6 @@ export class JSON_3DSCENE_SORTER{
                 material,
                 "default" + c++ + ""
             )
-            
         });
 
         // MESHES 
@@ -86,14 +89,6 @@ export class JSON_3DSCENE_SORTER{
             c++;
         });
 
-        // animations
-        //this.OperateAnimation(asset.animations);
-        /*
-        var arrName : string[] = [];
-        asset.animations.forEach(       anim => {
-            arrName.push(anim.name);
-        }); 
-        */
 
         // LOAD MATERIALS INTO MESHES 
         this.matArr.forEach( MAT => {
@@ -102,14 +97,27 @@ export class JSON_3DSCENE_SORTER{
             });
         });
 
+        var COUNTER = this.DFC(asset.rootnode);
+        
+        this.DFL( asset.rootnode , null, 0);
 
-        var count : number = this.DFC(this.ASSET.rootnode);
-        this.c = 0;
-        this.DFL( asset.rootnode );
+        // animations
+        this.OperateAnimation(asset.animations);
+        
+        
+        //this.nodeTree.get( 0 ).ApplyOffset(mat, this.nodeTree.getElemList() );
+
+        /*var arrName : string[] = [];
+        asset.animations.forEach(       anim => {
+            arrName.push(anim.name);
+        }); */
+        
+        
     }
  
     private c = 0;
 
+// ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- 
 
     private DFC( inode : NodeElement ) : number {
         
@@ -122,8 +130,48 @@ export class JSON_3DSCENE_SORTER{
 
         return counter + 1;
     }
+    
+    private counter = 0;
+    private DFL( inode : NodeElement , parentIndex:number, index:number ) {
+        
+        // CREATE A NEW NODE. 
+        var newNode = new Node(
+            inode.name,
+            parentIndex,
+            index,
+            mat4.getIdentity()
+        );
 
-    private DFL( INODE : NodeElement ):void {
+        // ATTACH MESH IF MESH IS AVAILABLE
+        if(    this.meshArr.hasIndex(inode.name) ){
+            newNode.meshIndex = this.meshArr.getIndex(inode.name)
+        }
+
+        // IF THERE ARE CHILDREN, CALL DFL ON THEM TO. 
+        if(inode.children){
+
+            // Ensure the children indicies arent null. 
+            var arr : number[] = [];
+            inode.children.forEach( e => {
+                arr.push( this.counter++ );
+            });
+
+            arr.forEach( ( ChildIndex , i) => {
+                this.DFL( 
+                    inode.children[i],
+                    newNode.INDEX,
+                    ChildIndex
+                 );
+            });
+
+            newNode.CHILDREN_INDICES = arr;
+        }
+
+        this.nodeTree.add( newNode , inode.name)
+
+    }
+
+    private DFL_ol( INODE : NodeElement ):void {
         class semiNode{ 
             public PARENT_INDEX : number;
             public INDEX : number ;
@@ -141,6 +189,7 @@ export class JSON_3DSCENE_SORTER{
         FIRST.INODE         = INODE ; 
 
         que.push(FIRST)
+
         var indexCounter = 1;
 
         var RUNS = true;
@@ -153,47 +202,55 @@ export class JSON_3DSCENE_SORTER{
                 c.INODE.name,
                 c.PARENT_INDEX,
                 c.INDEX,
-                //new mat4(c.INODE.transformation)
-                mat4.getIdentity() // identity. Because rotations scales and translations are wrontgly already applied at exported. 
+                mat4.getIdentity()
             );
 
-            // IF MATCHES A MESH LIGHT OR CAMERA OR OTHER; 
-            // MESH 
+            // if this node is a mesh node. add that to the node
             if(    this.meshArr.hasIndex(c.INODE.name) ){
-                // THIS IS A MESH. 
                 newNode.meshIndex = this.meshArr.getIndex(c.INODE.name)
             }
-                
+            
 
-            // IF CHILD NODES 
             if(c.INODE.children){
                 
+                // Ensure the children indicies arent null. 
                 newNode.CHILDREN_INDICES = [];
+                
+                // 
                 c.INODE.children.forEach( e => {
                     newNode.CHILDREN_INDICES.push( indexCounter++ );
                 });
 
+                // 
+                newNode.CHILDREN_INDICES.forEach( (childIndex, i ) => {
+                    var S : semiNode = new semiNode();
+                    S.PARENT_INDEX  = c.INDEX;
+                    S.INDEX         = childIndex;
+                    S.INODE         = c.INODE.children[i]; 
+                    que.push( S );
+                });
+                /*
                 for (let i = 0; i < c.INODE.children.length; i++) {
-                   // var addition : { i : number , a : number  , node : NodeElement} = { c.INDEX , newNode.CHILDREN_INDICES[i]  , INODE.children[i]}
                     var S : semiNode = new semiNode();
                     S.PARENT_INDEX  = c.INDEX;
                     S.INDEX         = newNode.CHILDREN_INDICES[i];
                     S.INODE         = c.INODE.children[i]; 
                     que.push( S );
-                }
+                }*/
             }
         
-            // 
-            this.nodeTree.add( newNode ,INODE.name)
+            this.nodeTree.add( newNode , c.INODE.name)
             if(que.length == 0){
                 RUNS = false;
             }
-
         }
     }
 
+// ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- 
+
     private OperateAnimation( anims : Animation[] ){
         var  a : GLAnimationBundle = new GLAnimationBundle( anims , this );
+        this.Animations = a.getAnimations();
     }
 
     private OperateMaterial( mat: Material):GLMaterial{
@@ -217,6 +274,8 @@ export class JSON_3DSCENE_SORTER{
         return new GLCamera();
     }
 
+// ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- 
+
     public getMeshes() : GLMesh[] {
         return this.meshArr.getElemList();
     }
@@ -230,6 +289,18 @@ export class JSON_3DSCENE_SORTER{
         return this.nodeTree.getElemList();
     }
 
+// ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- 
+    public hasNode( hash : string):boolean{
+        return this.nodeTree.hasIndex(hash);
+    }
+    public getNodeindex(hash:string){
+        return this.nodeTree.getIndex(hash);
+    }
+
+    public getAnimations() : GLAnimation[]{
+        return this.Animations;
+    }
+    
 }
 
 
@@ -271,6 +342,7 @@ export interface Channel {
     rotationkeys: Array<Array<number[] | number>>;
     scalingkeys:  Array<Array<number[] | number>>;
 }
+
 
 export interface Camera {
     name:          string;

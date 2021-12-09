@@ -1,6 +1,7 @@
 export class HashArray<T>{
 
     private hashList : { [hash:string]:number } = {}
+    private debugHashList : string[] = [];
     private elemList : T[] = []; 
     public length = 0;
 
@@ -9,9 +10,16 @@ export class HashArray<T>{
 
     // ADD THINGS
     public add(element : T, hash :string){
-        this.hashList[hash] = this.length;
-        this.elemList.push(element);
-        this.length++;
+
+        if( !(this.hasIndex(hash)) ){
+
+            this.hashList[hash] = this.length;
+            this.elemList.push(element);
+            this.debugHashList.push(hash);
+            this.length++;
+       
+        }
+
     }
 
     // CHANGETHINGS
@@ -34,6 +42,12 @@ export class HashArray<T>{
 
     public getIndex(hash:string):number{
         return this.hashList[hash];
+    }
+
+    public hasIndex(hash:string):boolean{
+        if( this.hashList[hash] != null )
+            return true;
+        return false;
     }
 
     public forEach( callbackfn: (value: T, index: number, array: T[]) => void, thisArg?: any): void{

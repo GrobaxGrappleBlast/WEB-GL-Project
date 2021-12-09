@@ -27,17 +27,29 @@ export class Node{
     ApplyOffset( offset : mat4 , tree : Node[] ){
  
         this.transformOffset = this.transform.multiply(offset);
-
         
 
         if(this.CHILDREN_INDICES)
             this.CHILDREN_INDICES.forEach( i => {
+
+                if(tree === undefined)
+                    console.log("TREE UNDEFINED");
+                
+                if(tree[i] === undefined)
+                    console.log("TREE I UNDEFINED");
+
                 tree[i].ApplyOffset( this.transformOffset , tree );
             });
 
-        if(this.meshIndex)
-            GLOBAL_WORLD.MESHES[this.meshIndex].changeTransform( this.transformOffset);
+        if(this.meshIndex){
 
+            if(GLOBAL_WORLD.MESHES == undefined){
+                console.log("HEJ - UNDEFINED GLOBALWORLD MESH");
+            }else if(GLOBAL_WORLD.MESHES[this.meshIndex] == undefined) {
+                console.log("HEJ - UNDEFINED GLOBALWORLD MESH["+this.meshIndex+"]" );
+            }
+            GLOBAL_WORLD.MESHES[this.meshIndex].changeTransform( this.transformOffset);
+        }
     }
 
 }

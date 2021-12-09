@@ -160,6 +160,7 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
         }
 
         public changeTransform( transform : mat4 = null){
+            
             if(transform){
                 this.transform = transform;
                 
@@ -171,20 +172,27 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
                         this.origVerticies[i+2]
                     ]));
                     
-                    console.log("\n--- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ");
-                    
                     this.verticies[i+0] = vecI.x;
                     this.verticies[i+1] = vecI.y;
                     this.verticies[i+2] = vecI.z;
 
                 }
+
+                console.log("BEFORE CHANGING TRANSFORM ON MESH");
                 // ALL ATTRIBTES THAT HAS ATTRIBUTE DATA 
+                //this.AssignThisBuffer( "loc" , this.verticies , this.POSITION , 3 , 0 );
+                /*
+                this._buffers["loc"].bind();
+                this._buffers["loc"].setData(this.verticies);
+                this._buffers["loc"].upload();
+                this._buffers["loc"].unbind();
+                */
+
                 var buffer = this._buffers["loc"];
                 buffer.bind();
                 buffer.setData(this.verticies);
                 buffer.upload();
                 buffer.unbind();
-                //this.AssignThisBuffer( "loc" , this.verticies , this.POSITION , 3 , 0 );
             }
         }
 
