@@ -166,8 +166,9 @@ export class GLAnimationTarget{
         var data : number[];
 
         data = this.channelRotation.getFrame(frame);
-        var vecROT = MATH.fromQtoV( data[0]    ,   data[1] ,   data[2], data[3] );
-       
+        var vecROT = MATH.fromQtoV( data[1] ,   data[2] ,   data[3], data[0] ); 
+        // ( data[1]    ,   data[2] ,   data[0], data[3] );  == X AXIS 
+     
         data = this.channelPosition.getFrame(frame);
         var vecPOS  = new vec3([data[0]    ,   data[1] ,   data[2]]);
        
@@ -182,9 +183,13 @@ export class GLAnimationTarget{
         this.oldROT = vecROT; 
         this.oldSCA = vecSCA; 
 
+        
         transform = transform.translate( vecPOS ); 
-        transform = transform.rotate( vecROT.length() ,  vecROT );
-        transform = transform.scale( vecSCA );
+        
+        if(vecROT.length() != 0)
+            transform = transform.rotate( (vecROT.length()/100) ,  vecROT );
+
+        //transform = transform.scale( vecSCA );
 
         GLOBAL_WORLD.NodeTree[this.targetIndex].ApplyOffset(transform ,  GLOBAL_WORLD.NodeTree );
     
@@ -204,9 +209,6 @@ export class GLAnimation{
 
     public playKeyFrame( frame : number ){
         this.targets.forEach( (target, i ) => {
-            
-           
-
             target.playKeyframe( frame );
         });
     }
@@ -308,9 +310,7 @@ export class GLAnimationBundle{
                             frame[0] as number
                         );
                     });
-                    
                     // Add Target;
-
                     CHAN_SCAL.interpolateMissing();
                     CHAN_ROT.interpolateMissing();
                     CHAN_POS.interpolateMissing();

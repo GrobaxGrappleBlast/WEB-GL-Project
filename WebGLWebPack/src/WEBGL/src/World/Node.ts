@@ -20,14 +20,21 @@ export class Node{
         this.NAME = name;
         this.PARENT_INDEX = PARENT_INDEX;
         this.INDEX = INDEX;
-        this.transform = mat4.getIdentity();
+       
     }
 
     ApplyOffset( offset : mat4 , tree : Node[] ){
  
-        console.log("APPLY OFFSET = " + offset)
-        this.transformOffset = this.transform.multiply(offset);
-        
+        //console.log("APPLY OFFSET = " + offset)
+       
+        this.transformOffset = mat4.getIdentity().multiply(offset);         
+
+        if( this.hasNULLValue(this.transformOffset) ){
+            console.log("SOMETHING IS WRONG NOW");
+            var a = this.transform.copy(a);
+            var a = a.multiply(offset);
+        }
+
         if(this.CHILDREN_INDICES)
             this.CHILDREN_INDICES.forEach( i => {
                 tree[i].ApplyOffset( this.transformOffset , tree );
@@ -38,4 +45,12 @@ export class Node{
         }
     }
 
+
+    public hasNULLValue( arr : mat4 ):boolean{
+        arr.values.forEach( e => {
+            if(e == NaN)
+                return true;
+        });
+        return false;
+    }
 }

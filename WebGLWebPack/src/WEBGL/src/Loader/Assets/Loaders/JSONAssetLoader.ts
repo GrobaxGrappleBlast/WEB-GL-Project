@@ -174,9 +174,7 @@ export class JSON_3DSCENE_SORTER{
                 newNode.CHILDREN_INDICES = [];
                 c.INODE.children.forEach( e => { newNode.CHILDREN_INDICES.push( indexCounter++ ); });
 
-                console.log(c.INDEX + ":: child indicies : ")
                 newNode.CHILDREN_INDICES.forEach( (childIndex, i ) => {
-                    console.log(childIndex);
                     var S : semiNode = new semiNode();
                     S.PARENT_INDEX  = c.INDEX;
                     S.INDEX         = childIndex;

@@ -80,7 +80,6 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
         }
 
         public draw(): void {
-            console.log("ON DRAW");
             if(this.loaded == true)
                 this.playAnimation();
 
@@ -107,15 +106,11 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
 
         public onFileRecieved( asset : any){
 
-            console.log("STARTING ");
-
             var sorter : JSON_3DSCENE_SORTER = asset.data;        
             
             this.MATERIALS = sorter.getMaterials();
 
             this.MESHES = sorter.getMeshes();
-
-            console.log("MESHES DEFINED NOW ");
 
             this.NodeTree   = sorter.getNodeTree();
 
@@ -126,8 +121,6 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
             this.loaded = true;
 
             GLOBAL_WORLD = this;
-
-            console.log("BEFORE OFFSET APPLYANCE");
 
             var I : mat4 = new mat4();
             var offset = I.setIdentity().translate(new vec3([0.0,0.0,0.0]) );
@@ -142,8 +135,7 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
                 this.frame = this.animations[this.chosenAnim].getStart();
             }
 
-           //this.animations[this.chosenAnim].playKeyFrame(this.frame++);
-            
+           this.animations[this.chosenAnim].playKeyFrame(this.frame++);
         }
 
         

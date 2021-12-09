@@ -159,7 +159,7 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
         }
 
         public changeTransform( NEWtransform : mat4){
-            console.log("CHANGING TRANSFORMS" + NEWtransform);
+            //console.log("CHANGING TRANSFORMS" + NEWtransform);
             this.transform = NEWtransform;
         }
     }
