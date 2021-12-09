@@ -57,7 +57,10 @@ export class JSON_3DSCENE_SORTER{
     
     private matArr  : HashArray<GLMaterial> = new HashArray<GLMaterial>()   ;
     private meshArr : HashArray<GLMesh>     = new HashArray<GLMesh>()       ;
-    private nodeTree: HashArray<Node>       = new HashArray<Node>()         ;
+    
+    private nodeTree: Node[]       ;//= new HashArray<Node>()         ;
+    private nodeTreeLookup : {[name:string]:number} = {};
+
     private Animations: GLAnimation[]       = [];
 
 // ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- 
@@ -97,9 +100,9 @@ export class JSON_3DSCENE_SORTER{
             });
         });
 
-        var COUNTER = this.DFC(asset.rootnode);
-        
-        this.DFL( asset.rootnode , null, 0);
+
+        this.nodeTree = new Array<Node>(this.DFC(asset.rootnode));  
+        this.DFL( asset.rootnode);// , null, 0);
 
         // animations
         this.OperateAnimation(asset.animations);
@@ -130,48 +133,9 @@ export class JSON_3DSCENE_SORTER{
 
         return counter + 1;
     }
-    
-    private counter = 0;
-    private DFL( inode : NodeElement , parentIndex:number, index:number ) {
-        
-        // CREATE A NEW NODE. 
-        var newNode = new Node(
-            inode.name,
-            parentIndex,
-            index,
-            mat4.getIdentity()
-        );
+ 
+    private DFL( INODE : NodeElement ):void {
 
-        // ATTACH MESH IF MESH IS AVAILABLE
-        if(    this.meshArr.hasIndex(inode.name) ){
-            newNode.meshIndex = this.meshArr.getIndex(inode.name)
-        }
-
-        // IF THERE ARE CHILDREN, CALL DFL ON THEM TO. 
-        if(inode.children){
-
-            // Ensure the children indicies arent null. 
-            var arr : number[] = [];
-            inode.children.forEach( e => {
-                arr.push( this.counter++ );
-            });
-
-            arr.forEach( ( ChildIndex , i) => {
-                this.DFL( 
-                    inode.children[i],
-                    newNode.INDEX,
-                    ChildIndex
-                 );
-            });
-
-            newNode.CHILDREN_INDICES = arr;
-        }
-
-        this.nodeTree.add( newNode , inode.name)
-
-    }
-
-    private DFL_ol( INODE : NodeElement ):void {
         class semiNode{ 
             public PARENT_INDEX : number;
             public INDEX : number ;
@@ -180,7 +144,6 @@ export class JSON_3DSCENE_SORTER{
         };
 
         // DEPTH FIRST LOOKUP : not a search, but a look up all elements and instantiate nodes for em.
-
         var que : semiNode[] = [];
 
         let FIRST : semiNode = new semiNode();
@@ -189,60 +152,46 @@ export class JSON_3DSCENE_SORTER{
         FIRST.INODE         = INODE ; 
 
         que.push(FIRST)
-
         var indexCounter = 1;
-
         var RUNS = true;
+
         while( RUNS ){
 
             var c = que.pop();
         
             // CREATE A NEW NODE 
-            var newNode = new Node(
+            var newNode = new Node( 
                 c.INODE.name,
                 c.PARENT_INDEX,
-                c.INDEX,
-                mat4.getIdentity()
-            );
+                c.INDEX         );
 
             // if this node is a mesh node. add that to the node
-            if(    this.meshArr.hasIndex(c.INODE.name) ){
+            if(    this.meshArr.hasIndex(c.INODE.name) )
                 newNode.meshIndex = this.meshArr.getIndex(c.INODE.name)
-            }
             
-
             if(c.INODE.children){
-                
-                // Ensure the children indicies arent null. 
-                newNode.CHILDREN_INDICES = [];
-                
-                // 
-                c.INODE.children.forEach( e => {
-                    newNode.CHILDREN_INDICES.push( indexCounter++ );
-                });
 
-                // 
+                newNode.CHILDREN_INDICES = [];
+                c.INODE.children.forEach( e => { newNode.CHILDREN_INDICES.push( indexCounter++ ); });
+
+                console.log(c.INDEX + ":: child indicies : ")
                 newNode.CHILDREN_INDICES.forEach( (childIndex, i ) => {
+                    console.log(childIndex);
                     var S : semiNode = new semiNode();
                     S.PARENT_INDEX  = c.INDEX;
                     S.INDEX         = childIndex;
                     S.INODE         = c.INODE.children[i]; 
                     que.push( S );
                 });
-                /*
-                for (let i = 0; i < c.INODE.children.length; i++) {
-                    var S : semiNode = new semiNode();
-                    S.PARENT_INDEX  = c.INDEX;
-                    S.INDEX         = newNode.CHILDREN_INDICES[i];
-                    S.INODE         = c.INODE.children[i]; 
-                    que.push( S );
-                }*/
+
             }
-        
-            this.nodeTree.add( newNode , c.INODE.name)
-            if(que.length == 0){
+            
+            this.nodeTreeLookup[c.INODE.name] = newNode.INDEX;
+            this.nodeTree[newNode.INDEX] = newNode;
+
+            if(que.length == 0)
                 RUNS = false;
-            }
+            
         }
     }
 
@@ -286,15 +235,20 @@ export class JSON_3DSCENE_SORTER{
     }
 
     public getNodeTree() : Node[ ]{
-        return this.nodeTree.getElemList();
+        return this.nodeTree;
     }
 
 // ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- 
+    
     public hasNode( hash : string):boolean{
-        return this.nodeTree.hasIndex(hash);
+        if ( this.nodeTreeLookup[hash] != null )
+            return true;
+        return false;
     }
     public getNodeindex(hash:string){
-        return this.nodeTree.getIndex(hash);
+        if ( this.nodeTreeLookup[hash] != null )
+            return this.nodeTreeLookup[hash];
+        return null;
     }
 
     public getAnimations() : GLAnimation[]{

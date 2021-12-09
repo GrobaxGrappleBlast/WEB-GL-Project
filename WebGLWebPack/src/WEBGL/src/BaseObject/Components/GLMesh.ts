@@ -23,7 +23,6 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
         private transform: mat4 = mat4.getIdentity();
 
         public verticies    : number[];
-        public origVerticies: number[];
         public texCoords    : number[];
         public faceIndecies : number[];
         public normals : number[];
@@ -42,7 +41,6 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
         ){
             super();
             this.verticies    = verticies    ;
-            this.origVerticies=verticies;
             this.texCoords    = texCoords    ;
             this.faceIndecies = faceIndecies ;
             this.normals      = normals      ;
@@ -98,8 +96,8 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
             this._buffers["face"].unbind();
 
             // UNIFORMS 
-            //this.transformLocation = mat.LOCAL_VERT_TRANS;
-            this.changeTransform();
+            this.transformLocation = mat.LOCAL_VERT_TRANS;
+           
         }
 
         public bind(){
@@ -110,7 +108,8 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
                     this._buffers[name].bind();    
                 }                                
             });
-            //gl.uniformMatrix4fv(   this.transformLocation   , false, this.transform.values  );
+
+            gl.uniformMatrix4fv(   this.transformLocation   , false, this.transform.values  );
         }
 
         public draw(){
@@ -159,42 +158,9 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
             
         }
 
-        public changeTransform( transform : mat4 = null){
-            
-            if(transform){
-                this.transform = transform;
-                
-                for (let i = 0; i < this.origVerticies.length; i += 3 ) {
-                    
-                    var vecI = this.transform.multiplyVec3(new vec3([
-                        this.origVerticies[i],
-                        this.origVerticies[i+1],
-                        this.origVerticies[i+2]
-                    ]));
-                    
-                    this.verticies[i+0] = vecI.x;
-                    this.verticies[i+1] = vecI.y;
-                    this.verticies[i+2] = vecI.z;
-
-                }
-
-                console.log("BEFORE CHANGING TRANSFORM ON MESH");
-                // ALL ATTRIBTES THAT HAS ATTRIBUTE DATA 
-                //this.AssignThisBuffer( "loc" , this.verticies , this.POSITION , 3 , 0 );
-                /*
-                this._buffers["loc"].bind();
-                this._buffers["loc"].setData(this.verticies);
-                this._buffers["loc"].upload();
-                this._buffers["loc"].unbind();
-                */
-
-                var buffer = this._buffers["loc"];
-                buffer.bind();
-                buffer.setData(this.verticies);
-                buffer.upload();
-                buffer.unbind();
-            }
+        public changeTransform( NEWtransform : mat4){
+            console.log("CHANGING TRANSFORMS" + NEWtransform);
+            this.transform = NEWtransform;
         }
-
     }
 

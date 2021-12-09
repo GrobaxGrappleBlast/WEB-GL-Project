@@ -86,7 +86,6 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
 
             if(this.loaded == true){
                 this.bind();
-                var counter = 0;
                 this.MATERIALS.forEach( mat => {
                     mat.use();
                     mat.bind();
@@ -128,11 +127,11 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
 
             GLOBAL_WORLD = this;
 
-            
+            console.log("BEFORE OFFSET APPLYANCE");
+
             var I : mat4 = new mat4();
-            var offset = I.setIdentity().translate(new vec3([200.0,200.0,0.0]) );
+            var offset = I.setIdentity().translate(new vec3([0.0,0.0,0.0]) );
             this.NodeTree[0].ApplyOffset( offset   , this.NodeTree   );    
-            
         }
         
         private chosenAnim : number = 0;
@@ -143,7 +142,7 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
                 this.frame = this.animations[this.chosenAnim].getStart();
             }
 
-           // this.animations[this.chosenAnim].playKeyFrame(this.frame++);
+           //this.animations[this.chosenAnim].playKeyFrame(this.frame++);
             
         }
 

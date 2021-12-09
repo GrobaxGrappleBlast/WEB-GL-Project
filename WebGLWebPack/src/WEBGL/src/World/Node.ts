@@ -7,8 +7,8 @@ export class Node{
     INDEX           : number;
     NAME            : string;
 
-    transformOffset : mat4;
-    transform       : mat4;
+    transformOffset : mat4 = mat4.getIdentity();
+    transform       : mat4 = mat4.getIdentity();
 
     meshIndex : number = null ;    
 
@@ -16,38 +16,24 @@ export class Node{
         name            : string,
         PARENT_INDEX    : number,
         INDEX           : number,
-        transform       : mat4
     ){
         this.NAME = name;
         this.PARENT_INDEX = PARENT_INDEX;
         this.INDEX = INDEX;
-        this.transform = transform;
+        this.transform = mat4.getIdentity();
     }
 
     ApplyOffset( offset : mat4 , tree : Node[] ){
  
+        console.log("APPLY OFFSET = " + offset)
         this.transformOffset = this.transform.multiply(offset);
         
-
         if(this.CHILDREN_INDICES)
             this.CHILDREN_INDICES.forEach( i => {
-
-                if(tree === undefined)
-                    console.log("TREE UNDEFINED");
-                
-                if(tree[i] === undefined)
-                    console.log("TREE I UNDEFINED");
-
                 tree[i].ApplyOffset( this.transformOffset , tree );
             });
 
         if(this.meshIndex){
-
-            if(GLOBAL_WORLD.MESHES == undefined){
-                console.log("HEJ - UNDEFINED GLOBALWORLD MESH");
-            }else if(GLOBAL_WORLD.MESHES[this.meshIndex] == undefined) {
-                console.log("HEJ - UNDEFINED GLOBALWORLD MESH["+this.meshIndex+"]" );
-            }
             GLOBAL_WORLD.MESHES[this.meshIndex].changeTransform( this.transformOffset);
         }
     }
