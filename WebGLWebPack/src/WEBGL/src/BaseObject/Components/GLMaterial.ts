@@ -21,6 +21,9 @@ abstract class Material_01{
         this.UNIFORM_CAMERA     = this.shader.getUniformLocation(       "viewMatrix"    );
         this.UNIFORM_PROJECTION = this.shader.getUniformLocation(       "projMatrix"    );
         this.LOCAL_VERT_TRANS   = this.shader.getUniformLocation(       "Ltransform"    );
+        this.LOCAL_TRANSFORMATION_LOCATION   = this.shader.getUniformLocation(       "LocalTransformation"    );
+       
+
         
     }
 
@@ -28,6 +31,7 @@ abstract class Material_01{
     public VERTEX_UV        : number;
     public VERTEX_NORMAL    : number;
  
+    public LOCAL_TRANSFORMATION_LOCATION:WebGLUniformLocation;
     public LOCAL_VERT_TRANS  :WebGLUniformLocation;
     public UNIFORM_WORLD     :WebGLUniformLocation;   
     public UNIFORM_CAMERA    :WebGLUniformLocation;

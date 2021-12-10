@@ -164,11 +164,15 @@ export class JSON_3DSCENE_SORTER{
                 c.INODE.name,
                 c.PARENT_INDEX,
                 c.INDEX         );
+                
+            newNode.giveOriginalTranslationMatrix( new mat4(c.INODE.transformation) );
 
             // if this node is a mesh node. add that to the node
-            if(    this.meshArr.hasIndex(c.INODE.name) )
+            if(    this.meshArr.hasIndex(c.INODE.name) ){
                 newNode.meshIndex = this.meshArr.getIndex(c.INODE.name)
-            
+            }
+
+
             if(c.INODE.children){
 
                 newNode.CHILDREN_INDICES = [];

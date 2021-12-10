@@ -160,15 +160,24 @@ export class GLAnimationTarget{
     private oldROT = new vec3([0,0,0]);
     private oldSCA = new vec3([0,0,0]);
     
+
     public playKeyframe(frame : number ){
 
         var transform :mat4 = ( new mat4() ).setIdentity();
         var data : number[];
 
         data = this.channelRotation.getFrame(frame);
-        var vecROT = MATH.fromQtoV( data[1] ,   data[2] ,   data[3], data[0] ); 
+        //var vecROT = new vec3([0.0,1.0,0.0]);
+        var vecROT = MATH.fromQtoV( 
+            data[   1   ],   
+            data[   2   ],
+            data[   3   ], 
+            data[   0   ] 
+        ); 
+        
+       
+
         // ( data[1]    ,   data[2] ,   data[0], data[3] );  == X AXIS 
-     
         data = this.channelPosition.getFrame(frame);
         var vecPOS  = new vec3([data[0]    ,   data[1] ,   data[2]]);
        
@@ -182,16 +191,20 @@ export class GLAnimationTarget{
         this.oldPOS = vecPOS; 
         this.oldROT = vecROT; 
         this.oldSCA = vecSCA; 
-
         
         transform = transform.translate( vecPOS ); 
         
         if(vecROT.length() != 0)
-            transform = transform.rotate( (vecROT.length()/100) ,  vecROT );
+            transform = transform.rotate( (vecROT.length()/5) ,  vecROT );
 
         //transform = transform.scale( vecSCA );
+        var a : mat4 = mat4.getIdentity().multiply(
+            GLOBAL_WORLD.NodeTree[this.targetIndex].startTransform
+        ).multiply(
+            transform
+        );
 
-        GLOBAL_WORLD.NodeTree[this.targetIndex].ApplyOffset(transform ,  GLOBAL_WORLD.NodeTree );
+        GLOBAL_WORLD.NodeTree[this.targetIndex].ApplyOffset(a.inverse() , mat4.getIdentity() ,  GLOBAL_WORLD.NodeTree );
     
     }
 }
@@ -328,6 +341,7 @@ export class GLAnimationBundle{
                 console.warn("NO TARGET FOUND FOR ANIM:\n" + str[0] + "\nTARGET :\n" + str[1]);
             }
         });
+      
      
         
     }

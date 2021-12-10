@@ -122,6 +122,7 @@ import { gl } from "./webGlUtil";
 		public constructor(name : string){
 	
 			let  _vShaderSource : string = `
+			#pragma glslify: inverse = require(glsl-inverse)
 			
 			attribute vec3 a_position;
 			attribute vec2 a_texCord;
@@ -129,7 +130,9 @@ import { gl } from "./webGlUtil";
 
 			varying vec3 frag_normal;
 			varying vec2 fragTexCord;
+			varying mat4 test;
 
+			uniform mat4 LocalTransformation;
 			uniform mat4 Ltransform;
 			uniform mat4 worldMatrix;
 			uniform mat4 viewMatrix;
@@ -138,8 +141,13 @@ import { gl } from "./webGlUtil";
 			void main(){
 				fragTexCord = a_texCord;
 				frag_normal = (worldMatrix * vec4(a_normal, 0.0)).xyz;
-				vec4 vert = Ltransform * vec4(a_position, 1.0);
-				gl_Position = projMatrix * viewMatrix * worldMatrix * vert;
+				
+				mat4 LOCAL =  (LocalTransformation) * ( Ltransform );
+				vec4 vert =   LOCAL*  vec4(a_position, 1.0 );
+				vec4 vert2 =  LocalTransformation *  vec4(a_position, 1.0);
+				test = LOCAL ;
+
+				gl_Position = (projMatrix * viewMatrix * worldMatrix *  vert)  ;
 			}
 			
 			`;

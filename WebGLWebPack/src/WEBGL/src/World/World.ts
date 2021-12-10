@@ -22,7 +22,7 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
 
 
     abstract class AWorld{
-        public camPos      = new vec3([-100,0,0]);
+        public camPos      = new vec3([-100,-100,0]);
         public lookAt      = new vec3([ 0,0,0]);
         public zDirection  = new vec3([ 0,1,0]);
 
@@ -46,7 +46,7 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
         }
 
         public rotateWorld(angle:number){
-            this.worldMatrix.rotate(angle, new vec3([0.5,0.5,1]) );
+            //this.worldMatrix.rotate(angle, new vec3([0.5,0.5,1]) );
         }
     }
 
@@ -89,8 +89,10 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
                     mat.use();
                     mat.bind();
                     mat._meshIndicees.forEach( index => {
+                       
                         this.MESHES[index].bind();
                         this.MESHES[index].draw();
+                    
                     });
                 });
                 GLOBAL_WORLD.rotateWorld(0.005)
@@ -108,23 +110,22 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
 
             var sorter : JSON_3DSCENE_SORTER = asset.data;        
             
-            this.MATERIALS = sorter.getMaterials();
+            this.MATERIALS  = sorter.getMaterials();
 
-            this.MESHES = sorter.getMeshes();
+            this.MESHES     = sorter.getMeshes();
 
             this.NodeTree   = sorter.getNodeTree();
 
             this.animations = sorter.getAnimations();
 
-
-           // this.chooseAnimation(  0 );
+            console.log("LOADING HERE !!!!!! ")
             this.loaded = true;
 
             GLOBAL_WORLD = this;
 
             var I : mat4 = new mat4();
             var offset = I.setIdentity().translate(new vec3([0.0,0.0,0.0]) );
-            this.NodeTree[0].ApplyOffset( offset   , this.NodeTree   );    
+            this.NodeTree[0].ApplyOffset( offset  , mat4.getIdentity() , this.NodeTree   );    
         }
         
         private chosenAnim : number = 0;
