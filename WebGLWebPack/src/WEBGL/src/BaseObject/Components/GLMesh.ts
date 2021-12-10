@@ -22,9 +22,6 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
         private transformLocation : WebGLUniformLocation = null;
         private transform: mat4 = mat4.getIdentity();
 
-        private LocaltransformLocation : WebGLUniformLocation = null;
-        private Localtransform: mat4 = mat4.getIdentity();
-    
         public verticies    : number[];
         public texCoords    : number[];
         public faceIndecies : number[];
@@ -82,8 +79,6 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
             this.UV          = mat.VERTEX_UV;
             this.NORMAL      = mat.VERTEX_NORMAL;
 
-            
-         
             // ALL ATTRIBTES THAT HAS ATTRIBUTE DATA 
             this.AssignThisBuffer( "loc" , this.verticies , this.POSITION , 3 , 0 );
         
@@ -100,12 +95,10 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
 
             // UNIFORMS 
             this.transformLocation    = mat.LOCAL_VERT_TRANS;
-            this.LocaltransformLocation = mat.LOCAL_TRANSFORMATION_LOCATION;
-           
         }
 
         public bind(){
-            
+     
             this._bufferNames.forEach(name => {
                 if(name == "norm"){
                     this._buffers[name].bind(true);    
@@ -113,9 +106,7 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
                     this._buffers[name].bind();    
                 }                                
             });
-
             gl.uniformMatrix4fv(   this.transformLocation   , false, this.transform.values  );
-            gl.uniformMatrix4fv(   this.LocaltransformLocation   , false, this.Localtransform.values  );
         }
 
         public draw(){
@@ -166,10 +157,6 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
 
         public changeTransform( NEWtransform : mat4){
             this.transform = NEWtransform;
-        }
-
-        public changeLocalTransform(transform : mat4){
-            this.Localtransform = transform;
         }
 
     }

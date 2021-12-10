@@ -122,17 +122,13 @@ import { gl } from "./webGlUtil";
 		public constructor(name : string){
 	
 			let  _vShaderSource : string = `
-			#pragma glslify: inverse = require(glsl-inverse)
-			
 			attribute vec3 a_position;
 			attribute vec2 a_texCord;
 			attribute vec3 a_normal;
 
 			varying vec3 frag_normal;
 			varying vec2 fragTexCord;
-			varying mat4 test;
 
-			uniform mat4 LocalTransformation;
 			uniform mat4 Ltransform;
 			uniform mat4 worldMatrix;
 			uniform mat4 viewMatrix;
@@ -142,12 +138,7 @@ import { gl } from "./webGlUtil";
 				fragTexCord = a_texCord;
 				frag_normal = (worldMatrix * vec4(a_normal, 0.0)).xyz;
 				
-				mat4 LOCAL =  (LocalTransformation) * ( Ltransform );
-				vec4 vert =   LOCAL*  vec4(a_position, 1.0 );
-				vec4 vert2 =  LocalTransformation *  vec4(a_position, 1.0);
-				test = LOCAL ;
-
-				gl_Position = (projMatrix * viewMatrix * worldMatrix *  vert)  ;
+				gl_Position = projMatrix * viewMatrix  * worldMatrix *  Ltransform * vec4(a_position, 1.0);
 			}
 			
 			`;
@@ -160,8 +151,6 @@ import { gl } from "./webGlUtil";
 			varying vec3 frag_normal;
 
 			uniform sampler2D base;
-			uniform sampler2D emit;
-			uniform sampler2D rough;
 
 			void main(){
 				//gl_FragColor =  texture2D(base, fragTexCord);
@@ -173,10 +162,8 @@ import { gl } from "./webGlUtil";
 				vec3 lightINT = ambINT + sunINT + dot( frag_normal , sunDIR );
 
 				vec4 texBase = texture2D( base 	,fragTexCord	);
-				vec4 texEmit = texture2D( emit 	,fragTexCord	);
-				vec4 texRough= texture2D( rough	,fragTexCord	);
-
-				gl_FragColor = vec4(texBase.rgb * lightINT, texBase.a) + texEmit ;
+			
+				gl_FragColor = vec4(texBase.rgb * lightINT, texBase.a);
 			}
 
 

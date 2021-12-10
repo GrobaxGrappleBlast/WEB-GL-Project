@@ -21,8 +21,6 @@ abstract class Material_01{
         this.UNIFORM_CAMERA     = this.shader.getUniformLocation(       "viewMatrix"    );
         this.UNIFORM_PROJECTION = this.shader.getUniformLocation(       "projMatrix"    );
         this.LOCAL_VERT_TRANS   = this.shader.getUniformLocation(       "Ltransform"    );
-        this.LOCAL_TRANSFORMATION_LOCATION   = this.shader.getUniformLocation(       "LocalTransformation"    );
-       
 
         
     }
@@ -31,7 +29,6 @@ abstract class Material_01{
     public VERTEX_UV        : number;
     public VERTEX_NORMAL    : number;
  
-    public LOCAL_TRANSFORMATION_LOCATION:WebGLUniformLocation;
     public LOCAL_VERT_TRANS  :WebGLUniformLocation;
     public UNIFORM_WORLD     :WebGLUniformLocation;   
     public UNIFORM_CAMERA    :WebGLUniformLocation;
@@ -66,7 +63,7 @@ abstract class Material_02 extends Material_01{
         super(name);
     }
 
-    public addTexture( tex : GLTexture, texUniform : WebGLUniformLocation, TextureNumber : number, GL_UNIF_NAME : string, TEX_GL_INDEX : number){
+    public addTexture( tex : GLTexture, texUniform : WebGLUniformLocation, TextureNumber : number, TEX_GL_INDEX : number){
         this._texINDI.push(TextureNumber);
         this._texUnif[  TextureNumber   ] = texUniform;
         this._texture[  TextureNumber   ] = tex ;
@@ -91,33 +88,21 @@ abstract class Material_02 extends Material_01{
 export class GLMaterial extends Material_02{
     
     private _texBase : GLTexture;
-    private _texEmit : GLTexture;
-    private _texRoug : GLTexture;
     public constructor(
         name :string,
-        texBase : GLTexture = null,
-        texEmit : GLTexture = null,
-        texRoug : GLTexture = null,    
+        texBase : GLTexture = null
     ){
         super(name);
-        //this._texBase = texBase; 
-        //this._texEmit = texEmit; 
-        //this._texRoug = texRoug; 
 
-        this._texBase =  new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png");
-        this._texEmit =  new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_emissive.png" );
-        this._texRoug =  new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png");
-
+        this._texBase =  new LoadableTexture("resources\\images\\RTS_Crate.png");
 
         this.texInit(this._texBase, "base", 0 ,gl.TEXTURE0);
-        this.texInit(this._texEmit, "emit", 1 ,gl.TEXTURE1);
-        this.texInit(this._texRoug, "rough",2 ,gl.TEXTURE2);
-
+    
     }
     private texInit( tex : GLTexture, GL_UNIF_NAME : string , TextureNumber : number , TEX_GL_INDEX : number ):void{
         if(tex != null){
             var texUniform = this.shader.getUniformLocation(GL_UNIF_NAME);
-            this.addTexture(tex,texUniform,TextureNumber,GL_UNIF_NAME,TEX_GL_INDEX);
+            this.addTexture(tex,texUniform,TextureNumber,TEX_GL_INDEX);
         }
     }
 }

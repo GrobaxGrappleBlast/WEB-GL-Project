@@ -2,7 +2,6 @@ import { Message } from "../Message/Message";
 import { ImageAssetLoader } from "./Loaders/AssetLoader";
 import { IAsset } from "./IAsset";
 import { IAssetLoader } from "./Loaders/IAssetLoader";
-import { JSONAssetLoader } from "./Loaders/JSONAssetLoader";
 
     // Source https://www.youtube.com/watch?v=_wvvtCqXwYY&list=PLv8Ddw9K0JPiTHLMQw31Yh4qyTAcHRnJx&index=7 
     export const MESSAGE_ASSET_LOADER_ASSET_LOADED = "LOADED::"
@@ -18,7 +17,7 @@ import { JSONAssetLoader } from "./Loaders/JSONAssetLoader";
             //console.log("IMAGE LOADER ADDED");
             AssetManager._loaders.push(new ImageAssetLoader());
             //console.log("JSON LOADER ADDED");
-            AssetManager._loaders.push(new JSONAssetLoader());
+            //AssetManager._loaders.push(new JSONAssetLoader());
            
         }
 
