@@ -16,13 +16,15 @@ import { mat4 } from '../Math/TSM_Library/mat4';
 import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
 
     abstract class AWorld{
+        public FarPlaneCoordinate = 1000.0;
+
         public camPos      = new vec3([5,5,5]);
         public lookAt      = new vec3([ 0,0,0]);
         public zDirection  = new vec3([ 0,1,0]);
 
         public worldMatrix  : mat4 = mat4.getIdentity(); 
         public viewMatrix   : mat4 = mat4.lookAt( this.camPos, this.lookAt, this.zDirection);
-        public projMatrix   : mat4 = mat4.perspective( toRadians(45), ( gl.canvas.width / gl.canvas.height), 0.1,1000 );
+        public projMatrix   : mat4 = mat4.perspective( toRadians(45), ( gl.canvas.width / gl.canvas.height), 0.1, this.FarPlaneCoordinate );
 
         reCalc(camPos:vec3, lookAt:vec3, up:vec3){
             this.viewMatrix   = mat4.lookAt( camPos, lookAt, up);
@@ -110,17 +112,24 @@ import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
         public onFileRecieved( asset : any){
             var JSON : JSON_3DSCENE_SORTER = asset.data; 
      
-            this.MESHES.push( JSON.getMeshes()[0]);
             this.MATERIALS.push( new GLMaterial(
-            "BaseMaterial",
-            [
-             new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
-             new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
+                "BaseMaterial",[
+                 new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
+                 new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
             ]));
-            //this.MATERIALS.push( new CubeMaterial("mymat") );
+            this.MESHES.push( JSON.getMeshes()[0]);
             this.MATERIALS[0]._meshIndicees.push(0);
-            
             this.MESHES[0].loadShaderLocations(this.MATERIALS[0]);
+
+
+            this.MATERIALS.push( new GLMaterial(
+                "reflection",[
+                    new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
+                    new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
+            ]));
+            this.MESHES.push( GLMesh.createBackgroundFarPlaneMesh() );
+            this.MATERIALS[1]._meshIndicees.push(1);
+            this.MESHES[1].loadShaderLocations(this.MATERIALS[1]);
 
            this.loaded = true;
 

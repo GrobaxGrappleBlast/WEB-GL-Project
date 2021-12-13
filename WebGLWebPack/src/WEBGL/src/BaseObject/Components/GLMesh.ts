@@ -5,6 +5,7 @@ import { GLMaterial, Material } from './GLMaterial';
 import { mat4 } from '../../Math/TSM_Library/mat4';
 import { ITransformable } from './ITransformable';
 import { vec3 } from "../../Math/TSM_Library/vec3";
+import { GLOBAL_WORLD } from '../../World/World';
 
     abstract class MeshTracker{
         
@@ -14,6 +15,8 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
 
     }
     export class GLMesh extends MeshTracker implements ITransformable{
+
+        private NotInversed = true;
 
         private _bufferNames : string[] = [];
         private _buffers :  {[name:string]:GLBuffer } = {}
@@ -90,6 +93,12 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
 
         public bind(){
             
+            if(this.NotInversed){
+                gl.enable(gl.CULL_FACE);
+            }else{
+                gl.disable(gl.CULL_FACE);
+            }
+
             this._bufferNames.forEach(name => {
                 if(name == "norm"){
                     this._buffers[name].bind(true);    
@@ -112,24 +121,47 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
             });
         }
 
-        public static createTestMesh(): GLMesh{
-
-            return new GLMesh(
-                [
-                    -4.0, -1.0, -1.0,
-                     4.0, -1.0, -1.0,
-                     4.0, -1.0, -21.0,
-                    -4.0, -1.0, -21.0,
-                ],[
-                    -1.5, 0,       
-                    2.5, 0.0,      
-                    2.5, 10.0,     
-                    -1.5, 10,
-                ],[
-                    0,  1,  2,
-                    0,  2,  3,
-                ]);
+        public setInverse( Inverse : boolean = true ){
             
+            if(Inverse){
+                gl.disable(gl.CULL_FACE);
+            }
+
+            this.NotInversed = !Inverse;
+        }
+
+        public static createBackgroundFarPlaneMesh(): GLMesh{
+
+            var a = GLOBAL_WORLD.FarPlaneCoordinate/10;
+            var mesh =  new GLMesh(
+
+                    [
+                        -a,  a, -a,        -a,  a,  a,        a,  a,  a,        a,  a, -a,
+                        -a,  a,  a,        -a, -a,  a,       -a, -a, -a,       -a,  a, -a,
+                         a,  a,  a,         a, -a,  a,        a, -a, -a,        a,  a, -a,
+                         a,  a,  a,         a, -a,  a,       -a, -a,  a,       -a,  a,  a,
+                         a,  a, -a,         a, -a, -a,       -a, -a, -a,       -a,  a, -a,
+                        -a, -a, -a,        -a, -a,  a,        a, -a,  a,        a, -a, -a
+                    ],[
+                        0, 0,       0, 1,      1, 1,     1, 0,
+                        0, 0,       1, 0,      1, 1,     0, 1,
+                        1, 1,       0, 1,      0, 0,     1, 0,
+                        1, 1,       1, 0,      0, 0,     0, 1,
+                        0, 0,       0, 1,      1, 1,     1, 0,
+                        1, 1,       1, 0,      0, 0,     0, 1
+                    ],[
+                        0,  1,  2,           0,  2,  3,
+                        5,  4,  6,           6,  4,  7,
+                        8,  9,  10,          8,  10, 11,
+                        13, 12, 14,          15, 14, 12,
+                        16, 17, 18,          16, 18, 19,
+                        21, 20, 22,          22, 20, 23
+                    ]
+
+            );
+            mesh.setInverse();
+            return mesh;
+               
         }
 
         public changeTransform( NEWtransform : mat4){
