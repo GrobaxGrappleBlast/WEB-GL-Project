@@ -269,7 +269,6 @@ export interface ITexture{
                 this.images.push( asset[i].data )
             }
             this.loadtexture();
-            console.log("RECIEVED STUFF ");
         }
 
         private requestImage(){

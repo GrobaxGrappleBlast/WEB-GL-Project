@@ -122,8 +122,8 @@ import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
             
             this.MESHES[0].loadShaderLocations(this.MATERIALS[0]);
 
-            console.log("### ### ### ### ### ### ### ### ### ### ###");
-            this.loaded = true;
+           this.loaded = true;
+
         }
 
         

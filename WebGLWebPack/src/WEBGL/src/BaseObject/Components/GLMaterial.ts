@@ -112,14 +112,12 @@ export class GLMaterial extends Material_02{
     
     private textures : {[TexRole:string]:string} = {};
     
-
-
     public constructor(
         name :string,
         texturesIN : TextureDataInput[]
     ){  
         super("GLMaterials");
-        this.textures["diffuse"] = "base";
+        this.textures["diffuse"]    = "base";
         this.textures["reflection"] = "cubeTexture";
 
         var counter = 0;
@@ -135,24 +133,8 @@ export class GLMaterial extends Material_02{
                 counter++; 
             }
         });
-        
-        /*
-        this.data.add(
-            new TextureData( 
-                this.shader.getUniformLocation("base"),0,
-                GLTexture.createCheckers(8),gl.TEXTURE0
-                ),
-            "base"
-        )
 
-        this.data.add( 
-            new TextureData( 
-            this.shader.getUniformLocation("cubeTexture"),1,
-            new CubeMapTexture,gl.TEXTURE1 ),"cubeTexture"
-        );*/
     }
-
-
 }
 
 
