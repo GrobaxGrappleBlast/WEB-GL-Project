@@ -7,8 +7,8 @@ import { JSON3D, Material, Mesh, Light, Camera, NodeElement, JSON_3DSCENE_SORTER
 import { GLMesh } from '../BaseObject/Components/GLMesh';
 
 import { DefaultShader, GLShader } from '../BaseObject/GL/GLShader';
-import { GLTexture, LoadableTexture } from '../BaseObject/Components/GLTexture';
-import { GLMaterial, CubeMaterial } from '../BaseObject/Components/GLMaterial';
+import { GLTexture, LoadableTexture, CubeMapTexture } from '../BaseObject/Components/GLTexture';
+import { GLMaterial, CubeMaterial, TextureDataInput } from '../BaseObject/Components/GLMaterial';
 import { Euler, Quaternion } from 'three';
 import { Material as MMat} from "../BaseObject/Components/GLMaterial"  
 
@@ -111,7 +111,12 @@ import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
             var JSON : JSON_3DSCENE_SORTER = asset.data; 
      
             this.MESHES.push( JSON.getMeshes()[0]);
-            this.MATERIALS.push( new GLMaterial("mymat") );
+            this.MATERIALS.push( new GLMaterial(
+            "BaseMaterial",
+            [
+             new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
+             new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
+            ]));
             //this.MATERIALS.push( new CubeMaterial("mymat") );
             this.MATERIALS[0]._meshIndicees.push(0);
             

@@ -2,10 +2,11 @@ import { AssetManager } from "../AssetManager";
 import { IAsset } from "../IAsset";
 import { IAssetLoader } from "./IAssetLoader";
 import { GLMesh } from '../../../BaseObject/Components/GLMesh';
-import { GLMaterial } from '../../../BaseObject/Components/GLMaterial';
+import { GLMaterial, TextureDataInput } from '../../../BaseObject/Components/GLMaterial';
 import { mat4 } from '../../../Math/TSM_Library/mat4';
 import { HashArray } from '../../../BaseObject/HashArray';
 import { vec3 } from "../../../Math/TSM_Library/vec3";
+import { CubeMapTexture, GLTexture } from '../../../BaseObject/Components/GLTexture';
 
 
 export class JSONAsset implements IAsset{
@@ -190,7 +191,12 @@ export class JSON_3DSCENE_SORTER{
 // ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- 
 
     private OperateMaterial( mat: Material):GLMaterial{
-        return new GLMaterial("default");
+        return  new GLMaterial(
+            "BaseMaterial",
+            [
+             new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
+             new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
+            ]);
     }
 
     private OperateMesh( mesh: Mesh):GLMesh{

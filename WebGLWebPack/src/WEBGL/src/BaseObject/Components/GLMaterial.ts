@@ -54,7 +54,18 @@ export abstract class Material{
     public abstract updateFilter(val:number);
 }
 
-export class TextureData{
+export class TextureDataInput{
+    public role : string; 
+    public texture : ITexture;
+    public constructor(
+        role    : string, 
+        texture : ITexture
+        ){  
+            this.role    =role    ;
+            this.texture =texture ;
+        }
+}
+class TextureData{
 
     public uniform      : WebGLUniformLocation   ;
     public textureNum   : number                 ;
@@ -75,7 +86,7 @@ export class TextureData{
         }
 
 }
-export abstract class Material_02 extends Material{
+abstract class Material_02 extends Material{
 
     public data     : HashArray<TextureData> = new HashArray<TextureData>();
  
@@ -88,7 +99,6 @@ export abstract class Material_02 extends Material{
     }
 
     public bind():void{
-        console.log("ASDASDAD");
         this.data.forEach( (data,i) => {
             gl.uniform1i(data.uniform , data.textureNum );
             data.Texture.bind( data.GL_TEXTURELOC );
@@ -100,29 +110,33 @@ export abstract class Material_02 extends Material{
 }
 export class GLMaterial extends Material_02{
     
-    //private data     : HashArray<TextureData> = new HashArray<TextureData>();
+    private textures : {[TexRole:string]:string} = {};
+    
 
-    private _texBase : GLTexture;
-    private _texEmit : GLTexture;
-    private _texRoug : GLTexture;
+
     public constructor(
         name :string,
-        texBase : GLTexture = null,
-        texEmit : GLTexture = null,
-        texRoug : GLTexture = null,    
-    ){
+        texturesIN : TextureDataInput[]
+    ){  
         super("GLMaterials");
-        //this._texBase = texBase; 
-        //this._texEmit = texEmit; 
-        //this._texRoug = texRoug; 
+        this.textures["diffuse"] = "base";
+        this.textures["reflection"] = "cubeTexture";
 
-        this._texBase =  GLTexture.createCheckers(8);
-        //this._texEmit =  new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_emissive.png" );
-        //this._texRoug =  new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png");
-
-        //this.texInit(this._texBase, "base", 0 ,gl.TEXTURE0);
-        //this.texInit(this._texEmit, "emit", 1 ,gl.TEXTURE1);
-        //this.texInit(this._texRoug, "rough",2 ,gl.TEXTURE2);
+        var counter = 0;
+        texturesIN.forEach( texture => {
+            if( this.textures[texture.role] != null ){
+                this.data.add(
+                    new TextureData( 
+                        this.shader.getUniformLocation( this.textures[texture.role] ),0 + counter,
+                        texture.texture ,gl.TEXTURE0 + counter
+                        ),
+                    this.textures[texture.role]
+                )    
+                counter++; 
+            }
+        });
+        
+        /*
         this.data.add(
             new TextureData( 
                 this.shader.getUniformLocation("base"),0,
@@ -135,7 +149,7 @@ export class GLMaterial extends Material_02{
             new TextureData( 
             this.shader.getUniformLocation("cubeTexture"),1,
             new CubeMapTexture,gl.TEXTURE1 ),"cubeTexture"
-        );
+        );*/
     }
 
 
