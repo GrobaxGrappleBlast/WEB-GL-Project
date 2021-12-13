@@ -8,25 +8,30 @@ import { GLMesh } from '../BaseObject/Components/GLMesh';
 
 import { DefaultShader, GLShader } from '../BaseObject/GL/GLShader';
 import { GLTexture, LoadableTexture, CubeMapTexture } from '../BaseObject/Components/GLTexture';
-import { GLMaterial, TextureDataInput } from '../BaseObject/Components/GLMaterial';
+import { GLMaterial, TextureDataInput, BackgroundMaterial } from '../BaseObject/Components/GLMaterial';
 import { Euler, Quaternion } from 'three';
 import { Material as MMat} from "../BaseObject/Components/GLMaterial"  
 
 import { mat4 } from '../Math/TSM_Library/mat4';
 import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
+import { mat3 } from '../Math/TSM_Library/mat3';
 
     abstract class AWorld{
         public FarPlaneCoordinate = 1000.0;
 
+        
         public camPos      = new vec3([5,5,5]);
         public lookAt      = new vec3([ 0,0,0]);
-        public zDirection  = new vec3([ 0,1,0]);
+        public zDirection  = new vec3([ 0,0,1]);
 
         public worldMatrix  : mat4 = mat4.getIdentity(); 
         public viewMatrix   : mat4 = mat4.lookAt( this.camPos, this.lookAt, this.zDirection);
         public projMatrix   : mat4 = mat4.perspective( toRadians(45), ( gl.canvas.width / gl.canvas.height), 0.1, this.FarPlaneCoordinate );
 
+        
+        
         reCalc(camPos:vec3, lookAt:vec3, up:vec3){
+            
             this.viewMatrix   = mat4.lookAt( camPos, lookAt, up);
         }
 
@@ -41,9 +46,19 @@ import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
             return this.projMatrix;
         }
 
+
+
+        private startPos : vec3 = new vec3([5,5,5]);
+        private rotAngle : vec3 = new vec3([0,0,1]).normalize();
+        private rotMAT   : mat3 = mat3.getIdentity();
+        
         public rotateWorld(angle:number){
-           
-           // this.worldMatrix.rotate(angle, new vec3([0.5,0.5,1]) );
+
+            this.rotMAT.rotate(angle,this.rotAngle);
+            this.camPos = this.rotMAT.multiplyVec3(this.startPos,this.camPos);
+            console.log("R");
+            this.viewMatrix  = mat4.lookAt(  this.camPos , this.lookAt, this.zDirection);
+            //this.worldMatrix.rotate(angle, new vec3([0.5,0.5,1]) );
         }
     }
 
@@ -99,7 +114,7 @@ import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
                     mat.unBind();
                 });
                 
-                GLOBAL_WORLD.rotateWorld(0.005)
+                GLOBAL_WORLD.rotateWorld(0.01   )
             
             }
         }
@@ -116,16 +131,17 @@ import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
             this.MATERIALS.push( new GLMaterial(
                 "BaseMaterial",[
                  new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
+                // new TextureDataInput("normal"      ,  new LoadableTexture("resources\\images\\normalmap.png") ),
                  new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
             ]));
             this.MESHES.push( JSON.getMeshes()[0]);
             this.MATERIALS[0]._meshIndicees.push(0);
             this.MESHES[0].loadShaderLocations(this.MATERIALS[0]);
 
-
-            this.MATERIALS.push( new GLMaterial(
+            
+            this.MATERIALS.push( new BackgroundMaterial(
                 "reflection",[
-                    new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
+                    //new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
                     new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
             ]));
             this.MESHES.push( GLMesh.createBackgroundFarPlaneMesh() );

@@ -16,6 +16,13 @@ import { vec3 } from "./vec3"
 
         static readonly identity = new mat3().setIdentity()
 
+        static getIdentity(): mat3{
+            var mat : mat3 = new mat3();
+            mat.setIdentity();
+            return mat;
+        }
+
+
         at(index: number): number {
             return this.values[index]
         }
@@ -396,12 +403,12 @@ import { vec3 } from "./vec3"
             const a00 = this.values[0]
             const a01 = this.values[1]
             const a02 = this.values[2]
-            const a10 = this.values[4]
-            const a11 = this.values[5]
-            const a12 = this.values[6]
-            const a20 = this.values[8]
-            const a21 = this.values[9]
-            const a22 = this.values[10]
+            const a10 = this.values[3]
+            const a11 = this.values[4]
+            const a12 = this.values[5]
+            const a20 = this.values[6]
+            const a21 = this.values[7]
+            const a22 = this.values[8]
 
             const b00 = x * x * t + c
             const b01 = y * x * t + z * s

@@ -1,6 +1,7 @@
 // SOURCE https://www.youtube.com/watch?v=HQbzO0xDuX8
 
 import { gl } from "./webGlUtil";
+import { HashArray } from '../HashArray';
 
 
 
@@ -13,6 +14,9 @@ import { gl } from "./webGlUtil";
 		private _uniforms: { [name: string]: WebGLUniformLocation } = {}
 		private attrNames : string[] = [];
 		private uniNames : string[]  = [];
+
+		public ShaderTextureData :HashArray<GlTexData> = new HashArray<GlTexData>();
+
 		/**
 		 * Creates a new Shader Object, that contains vertex shader and fragment shader
 		 * And a name for identification.
@@ -125,10 +129,22 @@ import { gl } from "./webGlUtil";
 		}
 	}
 
+
+
+	export class GlTexData{
+		role:string;
+		index:number;
+		public constructor(
+			role  :string,
+			index :number
+		){
+			this.role  = role  ;
+			this.index = index ;
+		}
+	}
 	export class DefaultShader extends GLShader{
 
 		public constructor(name : string){
-	
 			let  _vShaderSource : string = `
 			precision mediump float; 	
 
@@ -138,33 +154,39 @@ import { gl } from "./webGlUtil";
 
 			varying vec3 frag_normal;
 			varying vec2 fragTexCord;
-		
+			varying vec3 fragPosition;
+
 			uniform mat4 Ltransform;
 			uniform mat4 worldMatrix;
 			uniform mat4 viewMatrix;
 			uniform mat4 projMatrix;
+			uniform mat4 reflectionMatrix;
 
 			void main(){
+				fragPosition = vec3( vec4(a_position,1.0) * worldMatrix );
 				fragTexCord = a_texCord;
 				frag_normal = a_normal;
 				frag_normal = normalize(a_position);//(worldMatrix * vec4(a_normal, 0.0)).xyz;
 
-				gl_Position = (projMatrix * viewMatrix * worldMatrix *  vec4(a_position, 1.0))  ;
+				gl_Position = (projMatrix * viewMatrix * worldMatrix * reflectionMatrix * vec4(a_position, 1.0))  ;
 			}
-			
 			`;
 
 			let _fShaderSource : string = `
 			precision mediump float;
 
 			varying vec2 fragTexCord;
+			varying vec3 fragPosition;
 			varying vec3 frag_normal;
 
 			uniform sampler2D base;
 			uniform samplerCube cubeTexture;
+			uniform vec3 eyePosition;
 
 			void main(){
 				
+				
+				vec3 incident = ( eyePosition - fragPosition ) ;
 				//gl_FragColor = vec4( test, 0.5 , 1.0 );
 
 				vec3 ambINT   = vec3(0.4,0.4,0.4);	
@@ -173,56 +195,87 @@ import { gl } from "./webGlUtil";
 				vec3 lightINT = ambINT + sunINT + dot( frag_normal , sunDIR ) ;
 
 				vec4 texBase    = texture2D( base 	, fragTexCord	);
-				vec4 cubeTex    = textureCube( cubeTexture 	,  frag_normal  ); //normalize(frag_normal)	);
+				vec4 cubeTex    = textureCube( cubeTexture 	,  reflect(incident,  frag_normal)  ); //normalize(frag_normal)	);
 
 				//gl_FragColor = textureCube(cubeTexture, normalize(v_normal));
 				//gl_FragColor = cubeTex; //vec4( texBase.rgb * lightINT , texBase.a ) + ;
-				gl_FragColor = vec4( texBase.rgb * lightINT , texBase.a ) + ( 0.2* textureCube(cubeTexture,frag_normal));
+				gl_FragColor = vec4( texBase.rgb * lightINT , texBase.a ) + ( 0.2 * cubeTex );
 				
 			}
 			`;
-			super("GL SHADER ", _vShaderSource, _fShaderSource);
-			
+			super("DEFAULT_"+name, _vShaderSource, _fShaderSource);
+			this.ShaderTextureData.add(new GlTexData("base"         ,0),"diffuse");
+			this.ShaderTextureData.add(new GlTexData("cubeTexture"  ,1),"reflection");
 		}
+		
 	}
 
-	export class DefaultShader2 extends GLShader{
+	export class ShaderBackground extends GLShader{
 		public constructor(name : string){
 			let  _vShaderSource : string = `
+			precision mediump float; 	
+
 			attribute vec3 a_position;
 			attribute vec2 a_texCord;
 			attribute vec3 a_normal;
 
 			varying vec3 frag_normal;
 			varying vec2 fragTexCord;
-			varying vec3 v_normal;
+			varying vec3 fragPosition;
 
+			uniform mat4 Ltransform;
 			uniform mat4 worldMatrix;
 			uniform mat4 viewMatrix;
 			uniform mat4 projMatrix;
-			
-			void main() {
+			uniform mat4 reflectionMatrix;
 
+			void main(){
+				fragPosition = vec3( vec4(a_position,1.0) * worldMatrix );
 				fragTexCord = a_texCord;
-				frag_normal = (worldMatrix * vec4(a_normal, 0.0)).xyz;
-				gl_Position = (projMatrix * viewMatrix * worldMatrix) * vec4(a_position, 1.0);
-				v_normal = normalize(a_position);
+				frag_normal = a_normal;
+				frag_normal = normalize(a_position);//(worldMatrix *  vec4(a_normal, 0.0)).xyz;
+
+				
+                mat4 test = projMatrix * viewMatrix *worldMatrix ;
+				gl_Position = (projMatrix *reflectionMatrix* viewMatrix   *  worldMatrix * vec4(a_position, 1.0)   );
 			}
+			
 			`;
 			let _fShaderSource : string = `
 			precision mediump float;
 
-			varying vec3 v_normal;
-			varying vec3 frag_normal;
 			varying vec2 fragTexCord;
+			varying vec3 fragPosition;
+			varying vec3 frag_normal;
 
-			uniform samplerCube u_texture;
-			
-			void main() {
-			   gl_FragColor = textureCube(u_texture, normalize(v_normal));
+			uniform sampler2D base;
+			uniform samplerCube cubeTexture;
+			uniform vec3 eyePosition;
+			uniform mat4 reflectionMatrix;
+
+			void main(){
+				
+				
+				vec3 incident = ( eyePosition - fragPosition ) ;
+				//gl_FragColor = vec4( test, 0.5 , 1.0 );
+
+				vec3 ambINT   = vec3(0.4,0.4,0.4);	
+				vec3 sunINT   = vec3(0.7,0.6,0.1);
+				vec3 sunDIR   = normalize(vec3(1.0,-4.0,0.0));
+				vec3 lightINT = ambINT + sunINT + dot( frag_normal , sunDIR ) ;
+
+				vec4 texBase    = texture2D( base 	, fragTexCord	);
+				vec4 cubeTex    = textureCube( cubeTexture 	,  reflect(incident,  frag_normal)  ); //normalize(frag_normal)	);
+
+				//gl_FragColor = textureCube(cubeTexture, normalize(v_normal));
+				//gl_FragColor = cubeTex; //vec4( texBase.rgb * lightINT , texBase.a ) ;
+				gl_FragColor =  (  textureCube( cubeTexture ,  frag_normal ) );
+				
 			}
 			`;
-			super("DEFAULT SHADER 2", _vShaderSource, _fShaderSource);
+			super("BACKGROUND_", _vShaderSource, _fShaderSource);
+			this.ShaderTextureData.add(new GlTexData("base"         ,0),"diffuse");
+			this.ShaderTextureData.add(new GlTexData("cubeTexture"  ,1),"reflection");
 		}
 	}
 	

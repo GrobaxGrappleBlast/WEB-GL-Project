@@ -1,7 +1,9 @@
+
 import { epsilon } from "./constants";
 import { mat3 } from "./mat3";
 import { vec3 } from "./vec3";
 import { vec4 } from "./vec4";
+import * as THREE from 'three';
 
 
     export class mat4 {
@@ -664,4 +666,40 @@ import { vec4 } from "./vec4";
             }
             return str;
         }
+
+
+        public getTranslation() : vec3{
+            return new vec3([this.values[3],this.values[7],this.values[11] ]);
+        }
+
+        
+        public getScale() : vec3{
+
+            var m = this.copy();
+            var scaleX = new vec3([m.values[0],m.values[4],m.values[8] ]).length();
+            
+            var scaleY = new vec3([m.values[1],m.values[5],m.values[9] ]).length();
+            
+            var scaleZ = new vec3([m.values[2],m.values[6],m.values[10] ]).length(); 
+
+            return new vec3([scaleX,scaleY,scaleZ]); 
+        }
+
+        public getRotationMATRIX():mat4{
+
+            var temp =  new THREE.Matrix4();
+            var i=0;
+            temp.set(
+                this.values[i++],this.values[i++],this.values[i++],this.values[i++],
+                this.values[i++],this.values[i++],this.values[i++],this.values[i++],
+                this.values[i++],this.values[i++],this.values[i++],this.values[i++],
+                this.values[i++],this.values[i++],this.values[i++],this.values[i++])
+
+            temp = temp.extractRotation(temp);
+            var rot = new mat4(temp.toArray());
+
+            return rot;
+        }
+        
+
     }
