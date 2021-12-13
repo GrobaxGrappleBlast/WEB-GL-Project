@@ -3,11 +3,7 @@ import { IAsset } from "../IAsset";
 import { IAssetLoader } from "./IAssetLoader";
 import { GLMesh } from '../../../BaseObject/Components/GLMesh';
 import { GLMaterial } from '../../../BaseObject/Components/GLMaterial';
-import { GLLight } from '../../../BaseObject/Components/GLLIght';
-import { GLCamera } from '../../../BaseObject/Components/GLCamera';
 import { mat4 } from '../../../Math/TSM_Library/mat4';
-import { Node } from '../../../World/Node';
-import { GLAnimationBundle, GLAnimation } from '../../../BaseObject/Components/GLAnimation';
 import { HashArray } from '../../../BaseObject/HashArray';
 import { vec3 } from "../../../Math/TSM_Library/vec3";
 
@@ -61,8 +57,6 @@ export class JSON_3DSCENE_SORTER{
     private nodeTree: Node[]       ;//= new HashArray<Node>()         ;
     private nodeTreeLookup : {[name:string]:number} = {};
 
-    private Animations: GLAnimation[]       = [];
-
 // ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- 
 
     public constructor(asset : JSON3D){
@@ -101,12 +95,7 @@ export class JSON_3DSCENE_SORTER{
         });
 
 
-        this.nodeTree = new Array<Node>(this.DFC(asset.rootnode));  
-        this.DFL( asset.rootnode);// , null, 0);
-
-        // animations
-        this.OperateAnimation(asset.animations);
-        
+    
         
         //this.nodeTree.get( 0 ).ApplyOffset(mat, this.nodeTree.getElemList() );
 
@@ -121,7 +110,7 @@ export class JSON_3DSCENE_SORTER{
     private c = 0;
 
 // ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- 
-
+/*
     private DFC( inode : NodeElement ) : number {
         
         var counter = 0;
@@ -197,12 +186,8 @@ export class JSON_3DSCENE_SORTER{
         }
     }
 
+    */
 // ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- 
-
-    private OperateAnimation( anims : Animation[] ){
-        var  a : GLAnimationBundle = new GLAnimationBundle( anims , this );
-        this.Animations = a.getAnimations();
-    }
 
     private OperateMaterial( mat: Material):GLMaterial{
         return new GLMaterial("default");
@@ -217,14 +202,7 @@ export class JSON_3DSCENE_SORTER{
         );
     }
 
-    private OperateLight( light: Light):GLLight{
-        return new GLLight();
-    }
-
-    private OperateCameras( cam: Camera ):GLCamera{
-        return new GLCamera();
-    }
-
+    
 // ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- ### --- 
 
     public getMeshes() : GLMesh[] {
@@ -253,16 +231,8 @@ export class JSON_3DSCENE_SORTER{
         return null;
     }
 
-    public getAnimations() : GLAnimation[]{
-        return this.Animations;
-    }
-    
+
 }
-
-
-
-
-
 
 
 

@@ -8,21 +8,15 @@ import { GLMesh } from '../BaseObject/Components/GLMesh';
 
 import { DefaultShader, GLShader } from '../BaseObject/GL/GLShader';
 import { GLTexture, LoadableTexture } from '../BaseObject/Components/GLTexture';
-import { GLMaterial } from '../BaseObject/Components/GLMaterial';
-import { GLLight } from '../BaseObject/Components/GLLIght';
-import { GLCamera } from '../BaseObject/Components/GLCamera';
+import { GLMaterial, CubeMaterial } from '../BaseObject/Components/GLMaterial';
 import { Euler, Quaternion } from 'three';
-import { Node } from './Node';
+import { Material as MMat} from "../BaseObject/Components/GLMaterial"  
+
 import { mat4 } from '../Math/TSM_Library/mat4';
-import { GLAnimation } from '../BaseObject/Components/GLAnimation';
-
-
-
-
-
+import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
 
     abstract class AWorld{
-        public camPos      = new vec3([-100,-100,0]);
+        public camPos      = new vec3([5,5,5]);
         public lookAt      = new vec3([ 0,0,0]);
         public zDirection  = new vec3([ 0,1,0]);
 
@@ -46,7 +40,8 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
         }
 
         public rotateWorld(angle:number){
-            //this.worldMatrix.rotate(angle, new vec3([0.5,0.5,1]) );
+           
+           // this.worldMatrix.rotate(angle, new vec3([0.5,0.5,1]) );
         }
     }
 
@@ -58,14 +53,25 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
 
     export var GLOBAL_WORLD:World;
 
-    export class World extends AWorld{
+    export class World extends AWorld implements IFileRequestResponse{
 
         public MESHES      : GLMesh[] = [];
-        public MATERIALS   : GLMaterial[];
-        public NodeTree    : Node[]; 
+        public MATERIALS   : MMat[] = [];
 
-        public animations : GLAnimation[] ;
         private loaded      : boolean = false;
+
+
+        public updateOther(val){
+            this.MATERIALS.forEach(e  => {
+                e.updateOther(val);
+            });
+        }
+
+        public updateFilter(val){
+            this.MATERIALS.forEach(e  => {
+                e.updateFilter(val);
+            });
+        }
 
 
         public bind(): void{
@@ -80,63 +86,41 @@ import { GLAnimation } from '../BaseObject/Components/GLAnimation';
         }
 
         public draw(): void {
-            if(this.loaded == true)
-                this.playAnimation();
-
+            
             if(this.loaded == true){
                 this.bind();
-                this.MATERIALS.forEach( mat => {
+                this.MATERIALS.forEach( ( mat , i ) => {
                     mat.use();
                     mat.bind();
                     mat._meshIndicees.forEach( index => {
-                       
                         this.MESHES[index].bind();
                         this.MESHES[index].draw();
-                    
                     });
                 });
+                
                 GLOBAL_WORLD.rotateWorld(0.005)
+            
             }
         }
 
         public constructor(){
             super();
             GLOBAL_WORLD = this;
-            var fr = new FileRequest("resources\\3d\\broken_steampunk_clock\\test.json", this);
-            this.chosenAnim = 0;
+            var a = new FileRequest("resources\\sphere.json", this);
         }
 
         public onFileRecieved( asset : any){
-
-            var sorter : JSON_3DSCENE_SORTER = asset.data;        
+            var JSON : JSON_3DSCENE_SORTER = asset.data; 
+     
+            this.MESHES.push( JSON.getMeshes()[0]);
+            //this.MATERIALS.push( new GLMaterial("mymat") );
+            this.MATERIALS.push( new CubeMaterial("mymat") );
+            this.MATERIALS[0]._meshIndicees.push(0);
             
-            this.MATERIALS  = sorter.getMaterials();
+            this.MESHES[0].loadShaderLocations(this.MATERIALS[0]);
 
-            this.MESHES     = sorter.getMeshes();
-
-            this.NodeTree   = sorter.getNodeTree();
-
-            this.animations = sorter.getAnimations();
-
-            console.log("LOADING HERE !!!!!! ")
+            console.log("### ### ### ### ### ### ### ### ### ### ###");
             this.loaded = true;
-
-            GLOBAL_WORLD = this;
-
-            var I : mat4 = new mat4();
-            var offset = I.setIdentity().translate(new vec3([0.0,0.0,0.0]) );
-            this.NodeTree[0].ApplyOffset( offset  , mat4.getIdentity() , this.NodeTree   );    
-        }
-        
-        private chosenAnim : number = 0;
-        private frame : number = 0;
-
-        public playAnimation( ){
-            if( this.frame > this.animations[this.chosenAnim].getEnd() ){
-                this.frame = this.animations[this.chosenAnim].getStart();
-            }
-
-           this.animations[this.chosenAnim].playKeyFrame(this.frame++);
         }
 
         

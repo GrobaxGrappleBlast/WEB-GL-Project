@@ -35,19 +35,28 @@ import { JSONAssetLoader } from "./Loaders/JSONAssetLoader";
             );
         }
 
-        public static loadAsset(assetName:string):void{
+        public static loadAsset(assetName:string):boolean{
             try{
-                let extension = assetName.split('.').pop().toLowerCase();
-                for (let i = 0; i < AssetManager._loaders.length; i++) {
+
+                let extension = assetName.split('.').pop().toLowerCase().replace(/ /g, "");
+                
+                for (let i = 0; i < AssetManager._loaders.length; i++) {                    
                     let l = AssetManager._loaders[i];
-                    if( l.supportedExtensions.indexOf(extension) !== -1){
-                        l.LoadAsset(assetName);
-                        return;
+                    var ext : string = "";
+
+                    for (let a = 0; a < l.supportedExtensions.length; a++) {
+                        ext = l.supportedExtensions[a];                        
+                        if( ext == extension ){
+                            l.LoadAsset(assetName);
+                            return true;
+                        }
                     }
                 }
-                console.warn("Unable to Load Asset with extension of ::" + extension);
+                return false;
+                console.warn("Unable to Load Asset with extension of [" + extension+"]");
             }catch{
                 console.log("ERROR AT EXTENSIION : WAS : " + assetName);
+                return false;
             }
         }
 
@@ -55,12 +64,12 @@ import { JSONAssetLoader } from "./Loaders/JSONAssetLoader";
             return AssetManager._loadedAssets[assetName]  !== undefined;
         }
 
-        public static getAsset(assetName:string):IAsset{
+        public static getAsset(assetName:string){
             if(AssetManager.isAssetLoaded(assetName)){
                 return AssetManager._loadedAssets[assetName];
             }
             AssetManager.loadAsset(assetName);
-            return undefined;
+            
         }
     }
 

@@ -1,11 +1,10 @@
 import { AttributeInfo } from "../GL/GLBuffer";
 import { gl } from "../GL/webGlUtil";
 import { GLBuffer } from "../GL/GLBuffer"
-import { GLMaterial } from './GLMaterial';
+import { GLMaterial, Material } from './GLMaterial';
 import { mat4 } from '../../Math/TSM_Library/mat4';
 import { ITransformable } from './ITransformable';
 import { vec3 } from "../../Math/TSM_Library/vec3";
-
 
     abstract class MeshTracker{
         
@@ -21,15 +20,10 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
 
         private transformLocation : WebGLUniformLocation = null;
         private transform: mat4 = mat4.getIdentity();
-
-        private LocaltransformLocation : WebGLUniformLocation = null;
-        private Localtransform: mat4 = mat4.getIdentity();
     
         public verticies    : number[];
         public texCoords    : number[];
         public faceIndecies : number[];
-        public normals : number[];
-
 
         public POSITION    : number; //mat.VERTEX_POSITION;
         public UV          : number;//mat.VERTEX_UV;
@@ -46,16 +40,12 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
             this.verticies    = verticies    ;
             this.texCoords    = texCoords    ;
             this.faceIndecies = faceIndecies ;
-            this.normals      = normals      ;
 
             this._bufferNames.push("uv");
             this._buffers["uv"]   = new GLBuffer(2, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
 
             this._bufferNames.push("loc");
             this._buffers["loc"]  = new GLBuffer(3, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-
-            this._bufferNames.push("norm");
-            this._buffers["norm"] = new GLBuffer(3, gl.FLOAT, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
 
             this._bufferNames.push("face");
             this._buffers["face"] = new GLBuffer(123, gl.UNSIGNED_SHORT, gl.ELEMENT_ARRAY_BUFFER, gl.TRIANGLES);
@@ -75,22 +65,17 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
                 buffer.unbind();
             }
         }
-        public loadShaderLocations( mat :GLMaterial ){
+        public loadShaderLocations( mat : Material ){
 
             this.hasLoadedShader = true;
             this.POSITION    = mat.VERTEX_POSITION;
             this.UV          = mat.VERTEX_UV;
             this.NORMAL      = mat.VERTEX_NORMAL;
-
-            
          
             // ALL ATTRIBTES THAT HAS ATTRIBUTE DATA 
             this.AssignThisBuffer( "loc" , this.verticies , this.POSITION , 3 , 0 );
         
             this.AssignThisBuffer( "uv" , this.texCoords , this.UV , 2 , 0 );
-
-            if(this.normals != null )
-                this.AssignThisBuffer( "norm", this.normals, this.NORMAL, 3 ,0)
 
             // FACE INDICIES DOESNOT HAVE ATTRIBUTE DATA .. WHO KNOWS WHY
             this._buffers["face"].bind();
@@ -99,8 +84,7 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
             this._buffers["face"].unbind();
 
             // UNIFORMS 
-            this.transformLocation    = mat.LOCAL_VERT_TRANS;
-            this.LocaltransformLocation = mat.LOCAL_TRANSFORMATION_LOCATION;
+            //this.transformLocation    = mat.LOCAL_VERT_TRANS;
            
         }
 
@@ -115,7 +99,6 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
             });
 
             gl.uniformMatrix4fv(   this.transformLocation   , false, this.transform.values  );
-            gl.uniformMatrix4fv(   this.LocaltransformLocation   , false, this.Localtransform.values  );
         }
 
         public draw(){
@@ -133,34 +116,19 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
 
             return new GLMesh(
                 [
-                    -1.0,  1.0, -1.0,        -1.0,  1.0,  1.0,        1.0,  1.0,  1.0,        1.0,  1.0, -1.0,
-                    -1.0,  1.0,  1.0,        -1.0, -1.0,  1.0,       -1.0, -1.0, -1.0,       -1.0,  1.0, -1.0,
-                     1.0,  1.0,  1.0,         1.0, -1.0,  1.0,        1.0, -1.0, -1.0,        1.0,  1.0, -1.0,
-                     1.0,  1.0,  1.0,         1.0, -1.0,  1.0,       -1.0, -1.0,  1.0,       -1.0,  1.0,  1.0,
-                     1.0,  1.0, -1.0,         1.0, -1.0, -1.0,       -1.0, -1.0, -1.0,       -1.0,  1.0, -1.0,
-                    -1.0, -1.0, -1.0,        -1.0, -1.0,  1.0,        1.0, -1.0,  1.0,        1.0, -1.0, -1.0
+                    -4.0, -1.0, -1.0,
+                     4.0, -1.0, -1.0,
+                     4.0, -1.0, -21.0,
+                    -4.0, -1.0, -21.0,
                 ],[
-                    0, 0,       0, 1,      1, 1,     1, 0,
-                    0, 0,       1, 0,      1, 1,     0, 1,
-                    1, 1,       0, 1,      0, 0,     1, 0,
-                    1, 1,       1, 0,      0, 0,     0, 1,
-                    0, 0,       0, 1,      1, 1,     1, 0,
-                    1, 1,       1, 0,      0, 0,     0, 1
+                    -1.5, 0,       
+                    2.5, 0.0,      
+                    2.5, 10.0,     
+                    -1.5, 10,
                 ],[
-                            0,  1,  2,           0,  2,  3,
-                            5,  4,  6,           6,  4,  7,
-                            8,  9,  10,          8,  10, 11,
-                            13, 12, 14,          15, 14, 12,
-                            16, 17, 18,          16, 18, 19,
-                            21, 20, 22,          22, 20, 23
-                ]/*,[
-                     0.5,  0.5,  0.5,    0.5,  0.5,  0.5,    0.5,  0.5,  0.5,    0.5,  0.5,  0.5,  
-                     0.75, 0.25, 0.5,    0.75, 0.25, 0.5,    0.75, 0.25, 0.5,    0.75, 0.25, 0.5,
-                     0.25, 0.25, 0.75,   0.25, 0.25, 0.75,   0.25, 0.25, 0.75,   0.25, 0.25, 0.75,
-                     0.0,  0.0,  0.15,   1.0,  0.0,  0.15,   1.0,  0.0,  0.15,   1.0,  0.0,  0.15, 
-                     0.0,  1.0,  0.15,   0.0,  1.0,  0.15,   0.0,  1.0,  0.15,   0.0,  1.0,  0.15,
-                     0.5,  0.5,  1.0,    0.5,  0.5,  1.0,    0.5,  0.5,  1.0,    0.5,  0.5,  1.0
-                ]*/);
+                    0,  1,  2,
+                    0,  2,  3,
+                ]);
             
         }
 
@@ -168,9 +136,6 @@ import { vec3 } from "../../Math/TSM_Library/vec3";
             this.transform = NEWtransform;
         }
 
-        public changeLocalTransform(transform : mat4){
-            this.Localtransform = transform;
-        }
 
     }
 

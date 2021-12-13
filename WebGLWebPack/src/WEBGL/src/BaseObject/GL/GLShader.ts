@@ -11,6 +11,8 @@ import { gl } from "./webGlUtil";
 
 		private _attributes: { [name: string]: number } = {};
 		private _uniforms: { [name: string]: WebGLUniformLocation } = {}
+		private attrNames : string[] = [];
+		private uniNames : string[]  = [];
 		/**
 		 * Creates a new Shader Object, that contains vertex shader and fragment shader
 		 * And a name for identification.
@@ -73,6 +75,7 @@ import { gl } from "./webGlUtil";
 					break;
 				}
 				this._attributes[aInfo.name] = gl.getAttribLocation(this._program, aInfo.name);
+				this.attrNames.push(aInfo.name);
 			}
 
 		}
@@ -85,11 +88,14 @@ import { gl } from "./webGlUtil";
 					break;
 				}
 				this._uniforms[uInfo.name] = gl.getUniformLocation(this._program, uInfo.name);
+				this.uniNames.push(uInfo.name);
 			}
 		}
 
 		public getAttributeLocation(name: string): number {
 			if (this._attributes[name] === undefined) {
+				var a = this._attributes[name];
+				var b = name;
 				throw new Error("unable to find shader " + name + " in shader " + this._name);
 			}
 			return this._attributes[name];
@@ -97,6 +103,8 @@ import { gl } from "./webGlUtil";
 
 		public getUniformLocation(name: string): WebGLUniformLocation {
 			if (this._uniforms[name] === undefined) {
+				var a = this._uniforms[name];
+				var b = name;
 				throw new Error("unable to find uniform " + name + " in shader " + this._name);
 			}
 			return this._uniforms[name];
@@ -122,17 +130,15 @@ import { gl } from "./webGlUtil";
 		public constructor(name : string){
 	
 			let  _vShaderSource : string = `
-			#pragma glslify: inverse = require(glsl-inverse)
-			
+			precision mediump float; 	
+
 			attribute vec3 a_position;
 			attribute vec2 a_texCord;
 			attribute vec3 a_normal;
 
 			varying vec3 frag_normal;
 			varying vec2 fragTexCord;
-			varying mat4 test;
-
-			uniform mat4 LocalTransformation;
+		
 			uniform mat4 Ltransform;
 			uniform mat4 worldMatrix;
 			uniform mat4 viewMatrix;
@@ -142,41 +148,44 @@ import { gl } from "./webGlUtil";
 				fragTexCord = a_texCord;
 				frag_normal = (worldMatrix * vec4(a_normal, 0.0)).xyz;
 				
-				mat4 LOCAL =  (LocalTransformation) * ( Ltransform );
-				vec4 vert =   LOCAL*  vec4(a_position, 1.0 );
-				vec4 vert2 =  LocalTransformation *  vec4(a_position, 1.0);
-				test = LOCAL ;
+				//mat4 LOCAL =  (LocalTransformation) * ( Ltransform );
+				//vec4 vert =   LOCAL*  vec4(a_position, 1.0 );
+				//vec4 vert2 =  LocalTransformation *  vec4(a_position, 1.0);
+				//test = LOCAL ;
 
-				gl_Position = (projMatrix * viewMatrix * worldMatrix *  vert)  ;
+				gl_Position = (projMatrix * viewMatrix * worldMatrix *  vec4(a_position, 1.0))  ;
 			}
 			
 			`;
 
 			let _fShaderSource : string = `
-
 			precision mediump float;
-				
+
 			varying vec2 fragTexCord;
 			varying vec3 frag_normal;
+			//varying vec3 v_normal;
 
+			//uniform samplerCube cubeTexture;
 			uniform sampler2D base;
-			uniform sampler2D emit;
-			uniform sampler2D rough;
+			//uniform sampler2D emit;
+			//uniform sampler2D rough;
 
 			void main(){
-				//gl_FragColor =  texture2D(base, fragTexCord);
+				
 				//gl_FragColor = vec4( test, 0.5 , 1.0 );
 
-				vec3 ambINT   = vec3(0.1,0.1,0.1);
+				vec3 ambINT   = vec3(0.4,0.4,0.4);	
 				vec3 sunINT   = vec3(0.7,0.6,0.1);
 				vec3 sunDIR   = normalize(vec3(1.0,-4.0,0.0));
-				vec3 lightINT = ambINT + sunINT + dot( frag_normal , sunDIR );
+				vec3 lightINT = ambINT + sunINT + dot( frag_normal , sunDIR ) ;
 
-				vec4 texBase = texture2D( base 	,fragTexCord	);
-				vec4 texEmit = texture2D( emit 	,fragTexCord	);
-				vec4 texRough= texture2D( rough	,fragTexCord	);
+				vec4 texBase    = texture2D( base 	,fragTexCord	);
+				//vec4 texEmit  = texture2D( emit 	,fragTexCord	);
+				//vec4 texRough = texture2D( rough	,fragTexCord	);
 
-				gl_FragColor = vec4(texBase.rgb * lightINT, texBase.a) + texEmit ;
+				//gl_FragColor = textureCube(u_texture, normalize(v_normal));
+				gl_FragColor = vec4( texBase.rgb * lightINT , texBase.a );// + texEmit ;
+				
 			}
 
 
@@ -184,6 +193,47 @@ import { gl } from "./webGlUtil";
 
 			super(name, _vShaderSource, _fShaderSource);
 			
+		}
+	}
+
+	export class DefaultShader2 extends GLShader{
+		public constructor(name : string){
+			let  _vShaderSource : string = `
+			attribute vec3 a_position;
+			attribute vec2 a_texCord;
+			attribute vec3 a_normal;
+
+			varying vec3 frag_normal;
+			varying vec2 fragTexCord;
+			varying vec3 v_normal;
+
+			uniform mat4 worldMatrix;
+			uniform mat4 viewMatrix;
+			uniform mat4 projMatrix;
+			
+			void main() {
+
+				fragTexCord = a_texCord;
+				frag_normal = (worldMatrix * vec4(a_normal, 0.0)).xyz;
+				gl_Position = (projMatrix * viewMatrix * worldMatrix) * vec4(a_position, 1.0);
+				v_normal = normalize(a_position);
+			}
+			`;
+			let _fShaderSource : string = `
+			precision mediump float;
+
+			varying vec3 v_normal;
+			varying vec3 frag_normal;
+			varying vec2 fragTexCord;
+
+			uniform samplerCube u_texture;
+			
+
+			void main() {
+			   gl_FragColor = textureCube(u_texture, normalize(v_normal));
+			}
+			`;
+			super("DEFAULT SHADER 2", _vShaderSource, _fShaderSource);
 		}
 	}
 	

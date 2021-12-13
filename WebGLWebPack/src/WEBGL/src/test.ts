@@ -4,307 +4,223 @@ import { IFileRequestResponse } from "./Loader/IFileRequestResponse";
 import { toRadians } from "./Math/TSM_Library/constants";
 import { mat4 } from "./Math/TSM_Library/mat4";
 import { vec3 } from "./Math/TSM_Library/vec3";
+import { gl } from './BaseObject/GL/webGlUtil';
+import { GLShader, DefaultShader2 } from './BaseObject/GL/GLShader';
+import { Vector2, Vector3 } from "three";
 
-    export class testClass implements IFileRequestResponse{
+    export class testClass {
 
-        public _canvasid : string = "c"
-        public gl: WebGLRenderingContext;
-        public program;
 
-        public _camPos = new vec3([-5,0,0]);
-        public _lookAt = new vec3([ 0,0,0]);
-        public _zDirection =new vec3([0,1,0]);
+        private fieldOfViewRadians    = this.degToRad(60);
+        private modelXRotationRadians = this.degToRad(0);
+        private modelYRotationRadians = this.degToRad(0);
 
-        public worldMatrix: mat4; 
-        public viewMatrix : mat4;
-        public projMatrix : mat4;
-
-        public matWorldUniformLocation ;
-        public matViewUniformLocation  ;
-        public matProjUniformLocation  ;
-
-        public boxTexture;
-        public boxIndices;
-        public canvas;
-        public angle : number = 0.01;
-
-        public vertexShaderText : string =`
-        precision mediump float;
         
-        attribute vec3 vertPosition;
-        attribute vec2 vertTexCoord;
-        varying vec2 fragTexCoord;
-        uniform mat4 mWorld;
-        uniform mat4 mView;
-        uniform mat4 mProj;
-        
-        void main()
-        {
-          fragTexCoord = vertTexCoord;
-          gl_Position = mProj * mView * mWorld * vec4(vertPosition, 1.0);
-        } `;
-        
-        public fragmentShaderText: string =`
-        precision mediump float;
-    
-        varying vec2 fragTexCoord;
-        uniform sampler2D sampler;
-    
-        void main()
-        {
-          gl_FragColor = texture2D(sampler, fragTexCoord);
-        }`;
+        private shader : DefaultShader2 = new DefaultShader2("shader");
+        private positionLocation = this.shader.getAttributeLocation("a_position");
+        private matrixLocation   = this.shader.getUniformLocation("u_matrix"); 
+        private textureLocation  = this.shader.getUniformLocation("u_texture");
+        private positionBuffer = gl.createBuffer();
+        private then : number = 1;
+
+
+        public camPos      = new vec3([8,25,-15]);
+        public lookAt      = new vec3([ 0,-1,-12]);
+        public zDirection  = new vec3([ 0,1,0]);
+
+        public worldMatrix  : mat4 = mat4.getIdentity(); 
+        public viewMatrix   : mat4 = mat4.lookAt( this.camPos, this.lookAt, this.zDirection);
+        public projMatrix   : mat4 = mat4.perspective( toRadians(45), ( gl.canvas.width / gl.canvas.height), 0.1,1000 );
 
 
 
-        private image : any;
-        private imageLoader : FileRequest;
         public constructor(){
-            this.image = new Uint8Array([255,255,255,255]);
-            this.imageLoader = new FileRequest( "resources/images/RTS_Crate.jpg",this);
+                // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+                // Put the positions in the buffer
+                this.setGeometry(gl);
+
+                // Create a texture.
+                var texture = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+
+                // Get A 2D context
+                /** @type {Canvas2DRenderingContext} */
+                const ctx = document.createElement("canvas").getContext("2d");
+
+                ctx.canvas.width = 128;
+                ctx.canvas.height = 128;
+
+                const faceInfos = [
+                    { target: gl.TEXTURE_CUBE_MAP_POSITIVE_X, faceColor: '#F00', textColor: '#0FF', text: '+X' },
+                    { target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X, faceColor: '#FF0', textColor: '#00F', text: '-X' },
+                    { target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y, faceColor: '#0F0', textColor: '#F0F', text: '+Y' },
+                    { target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, faceColor: '#0FF', textColor: '#F00', text: '-Y' },
+                    { target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z, faceColor: '#00F', textColor: '#FF0', text: '+Z' },
+                    { target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, faceColor: '#F0F', textColor: '#0F0', text: '-Z' },
+                ];
+                faceInfos.forEach((faceInfo) => {
+                    const {target, faceColor, textColor, text} = faceInfo;
+                    this.generateFace(ctx, faceColor, textColor, text);
+
+                    gl.texImage2D(target, 0,  gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, ctx.canvas);
+                });
+                gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+                gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+
+                requestAnimationFrame( this.drawScene.bind(this) );
+
+                // Draw the scene.
+                
         }
 
-        public onFileRecieved( asset : any){
-            this.image = AssetManager.getAsset("resources/images/RTS_Crate.jpg").data;
-            this.image = asset.data;
-            this.setupTextures(true);
+        private generateFace(ctx, faceColor, textColor, text) {
+            const {width, height} = ctx.canvas;
+            ctx.fillStyle = faceColor;
+            ctx.fillRect(0, 0, width, height);
+            ctx.font = `${width * 0.7}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = textColor;
+            //ctx.fillText(text, width / 2, height / 2);
+        }
+        // Fill the buffer with the values that define a cube.
+        private setGeometry(gl) {
+            var positions = new Float32Array(
+                [
+                -0.5, -0.5,  -0.5,
+                -0.5,  0.5,  -0.5,
+                0.5, -0.5,  -0.5,
+                -0.5,  0.5,  -0.5,
+                0.5,  0.5,  -0.5,
+                0.5, -0.5,  -0.5,
+
+                -0.5, -0.5,   0.5,
+                0.5, -0.5,   0.5,
+                -0.5,  0.5,   0.5,
+                -0.5,  0.5,   0.5,
+                0.5, -0.5,   0.5,
+                0.5,  0.5,   0.5,
+
+                -0.5,   0.5, -0.5,
+                -0.5,   0.5,  0.5,
+                0.5,   0.5, -0.5,
+                -0.5,   0.5,  0.5,
+                0.5,   0.5,  0.5,
+                0.5,   0.5, -0.5,
+
+                -0.5,  -0.5, -0.5,
+                0.5,  -0.5, -0.5,
+                -0.5,  -0.5,  0.5,
+                -0.5,  -0.5,  0.5,
+                0.5,  -0.5, -0.5,
+                0.5,  -0.5,  0.5,
+
+                -0.5,  -0.5, -0.5,
+                -0.5,  -0.5,  0.5,
+                -0.5,   0.5, -0.5,
+                -0.5,  -0.5,  0.5,
+                -0.5,   0.5,  0.5,
+                -0.5,   0.5, -0.5,
+
+                0.5,  -0.5, -0.5,
+                0.5,   0.5, -0.5,
+                0.5,  -0.5,  0.5,
+                0.5,  -0.5,  0.5,
+                0.5,   0.5, -0.5,
+                0.5,   0.5,  0.5,
+
+                ]);
+            gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
         }
 
+        private drawScene( time ) {
+           
+            // convert to seconds
+            time *= 0.001;
+            // Subtract the previous time from the current time
+            if(this.then == undefined)
+                this.then = 1; 
 
-        public InitDemo():void {
-            this.setupCanvas();
-            this.setupShader();
-            this.setupMESH();
-            this.setupTextures(); 
-            this.setupWOrld();
-        }
-        
-        private setupCanvas():void{
+            var deltaTime = time - this.then;
+            // Remember the current time for the next frame.
+            this.then = time;
             
-            this.canvas = document.getElementById("c") as HTMLCanvasElement;
-            this.canvas.width = 800;
-            this.canvas.height=800;
-            this.gl = this.canvas.getContext("webgl");
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-            if (!this.gl) {
-                console.log('WebGL not supported, falling back on experimental-webgl');
-                this.gl = this.canvas.getContext('experimental-webgl') as WebGLRenderingContext;
-            }
+            gl.enable(gl.CULL_FACE);
+            gl.enable(gl.DEPTH_TEST);
 
-            if (!this.gl) {
-                alert('Your browser does not support WebGL');
-            }
+            // Animate the rotation
+            this.modelYRotationRadians += -0.7 * deltaTime;
+            this.modelXRotationRadians += -0.4 * deltaTime;
 
-            this.gl.clearColor(0.75, 0.85, 0.8, 1.0);
-            this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-            this.gl.enable(this.gl.DEPTH_TEST);
-            this.gl.enable(this.gl.CULL_FACE);
-            this.gl.frontFace(this.gl.CCW);
-            this.gl.cullFace(this.gl.BACK);
-            
+            // Clear the canvas AND the depth buffer.
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+            // Tell it to use our program (pair of shaders)
+            this.shader.use();
+
+            // Turn on the position attribute
+            gl.enableVertexAttribArray(this.positionLocation);
+
+            // Bind the position buffer.
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+
+            // Tell the position attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+            var size = 3;          // 3 components per iteration
+            var type = gl.FLOAT;   // the data is 32bit floats
+            var normalize = false; // don't normalize the data
+            var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+            var offset = 0;        // start at the beginning of the buffer
+            gl.vertexAttribPointer(
+                this.positionLocation, size, type, normalize, stride, offset);
+
+          
+          
+          
+                // Compute the projection matrix
+            var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+            var projectionMatrix =
+            mat4.perspective(this.fieldOfViewRadians, aspect, 1, 2000);
+
+            var cameraPosition  = new vec3([0, 0, 2]);
+            var up              = new vec3([0, 1, 0]);
+            var target          = new vec3([0, 0, 0]);
+
+            // Compute the camera's matrix using look at.
+            var cameraMatrix = mat4.lookAt(cameraPosition, target, up);
+
+            // Make a view matrix from the camera matrix.
+            var viewMatrix = cameraMatrix.copy().inverse();
+
+            var viewProjectionMatrix = projectionMatrix.multiply(viewMatrix);// mat4.multiply(projectionMatrix, viewMatrix);
+
+            var matrix = viewProjectionMatrix.rotate( this.modelXRotationRadians, new vec3([ 1.0 , 0.0 , 0.0]) );// mat4.xRotate(viewProjectionMatrix, modelXRotationRadians);
+                matrix = viewProjectionMatrix.rotate( this.modelYRotationRadians, new vec3([ 0.0 , 0.0 , 1.0]) ); //mat4.yRotate(matrix, modelYRotationRadians);
+
+
+
+ 
+
+            // Set the matrix.
+            gl.uniformMatrix4fv(this.matrixLocation, false, matrix.values);
+
+            // Tell the shader to use texture unit 0 for u_texture
+            gl.uniform1i(this.textureLocation, 0);
+
+            // Draw the geometry.
+            gl.drawArrays(gl.TRIANGLES, 0, 6 * 6);
+
+            requestAnimationFrame( this.drawScene.bind(this) );
         }
-        private setupShader():void{
 
-            //
-            // Create shaders
-            // 
-            var vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
-            var fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
-
-            this.gl.shaderSource(vertexShader, this.vertexShaderText);
-            this.gl.shaderSource(fragmentShader, this.fragmentShaderText);
-
-            this.gl.compileShader(vertexShader);
-            if (!this.gl.getShaderParameter(vertexShader, this.gl.COMPILE_STATUS)) {
-                console.error(  'ERROR compiling vertex shader!', this.gl.getShaderInfoLog(vertexShader)  );
-                return;
-            }
-
-            this.gl.compileShader(fragmentShader);
-            if (!this.gl.getShaderParameter(fragmentShader, this.gl.COMPILE_STATUS)) {
-                console.error('ERROR compiling fragment shader!', this.gl.getShaderInfoLog(fragmentShader));
-                return;
-            }
-
-            this.program = this.gl.createProgram();
-            this.gl.attachShader(this.program , vertexShader);
-            this.gl.attachShader(this.program , fragmentShader);
-            this.gl.linkProgram(this.program );
-            if (!this.gl.getProgramParameter(this.program , this.gl.LINK_STATUS)) {
-                console.error('ERROR linking program!', this.gl.getProgramInfoLog(this.program ));
-                return;
-            }
-            this.gl.validateProgram(this.program );
-            if (!this.gl.getProgramParameter(this.program , this.gl.VALIDATE_STATUS)) {
-                console.error('ERROR validating program!', this.gl.getProgramInfoLog(this.program ));
-                return;
-            }
-            
-
+        private radToDeg(r) {
+            return r * 180 / Math.PI;
         }
-        private setupMESH():void{
-            var boxVertices = 
-            [ // X, Y, Z           U, V
-                // Top
-                -1.0, 1.0, -1.0,   0, 0,
-                -1.0, 1.0, 1.0,    0, 1,
-                1.0, 1.0, 1.0,     1, 1,
-                1.0, 1.0, -1.0,    1, 0,
 
-                // Left
-                -1.0, 1.0, 1.0,    0, 0,
-                -1.0, -1.0, 1.0,   1, 0,
-                -1.0, -1.0, -1.0,  1, 1,
-                -1.0, 1.0, -1.0,   0, 1,
-
-                // Right
-                1.0, 1.0, 1.0,    1, 1,
-                1.0, -1.0, 1.0,   0, 1,
-                1.0, -1.0, -1.0,  0, 0,
-                1.0, 1.0, -1.0,   1, 0,
-
-                // Front
-                1.0, 1.0, 1.0,    1, 1,
-                1.0, -1.0, 1.0,    1, 0,
-                -1.0, -1.0, 1.0,    0, 0,
-                -1.0, 1.0, 1.0,    0, 1,
-
-                // Back
-                1.0, 1.0, -1.0,    0, 0,
-                1.0, -1.0, -1.0,    0, 1,
-                -1.0, -1.0, -1.0,    1, 1,
-                -1.0, 1.0, -1.0,    1, 0,
-
-                // Bottom
-                -1.0, -1.0, -1.0,   1, 1,
-                -1.0, -1.0, 1.0,    1, 0,
-                1.0, -1.0, 1.0,     0, 0,
-                1.0, -1.0, -1.0,    0, 1,
-            ];
-
-            this.boxIndices =
-            [
-                // Top
-                0, 1, 2,
-                0, 2, 3,
-
-                // Left
-                5, 4, 6,
-                6, 4, 7,
-
-                // Right
-                8, 9, 10,
-                8, 10, 11,
-
-                // Front
-                13, 12, 14,
-                15, 14, 12,
-
-                // Back
-                16, 17, 18,
-                16, 18, 19,
-
-                // Bottom
-                21, 20, 22,
-                22, 20, 23
-            ];
-
-            var boxVertexBufferObject = this.gl.createBuffer();
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, boxVertexBufferObject);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(boxVertices), this.gl.STATIC_DRAW);
-
-            var boxIndexBufferObject = this.gl.createBuffer();
-            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, boxIndexBufferObject);
-            this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.boxIndices), this.gl.STATIC_DRAW);
-
-            var positionAttribLocation = this.gl.getAttribLocation(this.program , 'vertPosition');
-            var texCoordAttribLocation = this.gl.getAttribLocation(this.program , 'vertTexCoord');
-            this.gl.vertexAttribPointer(
-                positionAttribLocation, // Attribute location
-                3, // Number of elements per attribute
-                this.gl.FLOAT, // Type of elements
-                false,
-                5 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
-                0 // Offset from the beginning of a single vertex to this attribute
-            );
-            this.gl.vertexAttribPointer(
-                texCoordAttribLocation, // Attribute location
-                2, // Number of elements per attribute
-                this.gl.FLOAT, // Type of elements
-                false,
-                5 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
-                3 * Float32Array.BYTES_PER_ELEMENT // Offset from the beginning of a single vertex to this attribute
-            );
-
-            this.gl.enableVertexAttribArray(positionAttribLocation);
-            this.gl.enableVertexAttribArray(texCoordAttribLocation);
-
+        private degToRad(d) {
+            return d * Math.PI / 180;
         }
-        private setupTextures(hasLoaded : boolean = false ):void{
-            this.boxTexture = this.gl.createTexture();
-            this.gl.bindTexture(this.gl.TEXTURE_2D, this.boxTexture);
-            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-            if(hasLoaded){
-                var LOOKATME = this.image;
-                this.gl.texImage2D(
-                    this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA,
-                    this.gl.UNSIGNED_BYTE,
-                    this.image
-                );
-            }else{
-                this.gl.texImage2D( 
-                this.gl.TEXTURE_2D,
-                0, 
-                this.gl.RGBA,
-                1,
-                1,
-                0,
-                this.gl.RGBA, 
-                this.gl.UNSIGNED_BYTE, 
-                this.image
-                );
-            }
-            this.gl.bindTexture(this.gl.TEXTURE_2D, null);
-        }
-        private setupWOrld():void{
-            // Tell OpenGL state machine which program should be active.
-            this.gl.useProgram(this.program);
-
-            this.matWorldUniformLocation = this.gl.getUniformLocation(this.program, 'mWorld');
-            this.matViewUniformLocation  = this.gl.getUniformLocation(this.program, 'mView');
-            this.matProjUniformLocation  = this.gl.getUniformLocation(this.program, 'mProj');
-            
-            this.worldMatrix = mat4.getIdentity();
-            this.viewMatrix  = mat4.lookAt( this._camPos, this._lookAt, this._zDirection);
-            this.projMatrix  = mat4.perspective( toRadians(45), this.canvas.clientWidth / this.canvas.clientHeight, 0.1, 1000.0 );
-
-
-            this.gl.uniformMatrix4fv(this.matWorldUniformLocation,false, this.worldMatrix.values);
-            this.gl.uniformMatrix4fv(this.matViewUniformLocation, false, this.viewMatrix.values);
-            this.gl.uniformMatrix4fv(this.matProjUniformLocation, false, this.projMatrix.values);
-        }
-        
-       
-        public update():void{
-
-            this.worldMatrix = this.worldMatrix.rotate(this.angle, new vec3([0.5,0.5,1]) );
-            
-            
-            this.gl.uniformMatrix4fv(this.matWorldUniformLocation, false, this.worldMatrix.values);
-
-            this.gl.clearColor(0.75, 0.85, 0.8, 1.0);
-            this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
-
-            this.gl.bindTexture(this.gl.TEXTURE_2D, this.boxTexture);
-            this.gl.activeTexture(this.gl.TEXTURE0);
-
-            this.gl.drawElements(this.gl.TRIANGLES, this.boxIndices.length, this.gl.UNSIGNED_SHORT, 0);
-
-            //requestAnimationFrame(loop);
-        };
-
     }
         

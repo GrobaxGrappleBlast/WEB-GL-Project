@@ -6,13 +6,27 @@
     
 
         <script src="WebGL.js" ></script>
+        
     </head>
     <body>
+        <div>
         <h1>My File</h1>
         <p>my WebGL thingy</p>
-
         <br>
+        <canvas id="canvas" width="400px" height="400px" style="background-color: lightgray;"></canvas>
+        </div>
+        <div>
+            <select id="C_FILTERID" onselect="changeFilterMethod(this)">
+                <option value="0">Linear filtering </option>
+                <option value="1">Nearest Filtering</option>
+                <option value="2">MipMap Filtering</option>
+              </select>
 
-        <canvas id="c" width="400px" height="400px" ></canvas>
+              <select id="C_OTHERID" onselect="changeOtherMethod(this)" >
+              
+                <option value="0">Clamp To Edge</option>
+                <option value="1">Repeat</option>
+              </select>
+        </div>
     </body>
 </html>
