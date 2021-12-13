@@ -2,7 +2,16 @@ import { FileRequest, FileRequestBundle } from '../../Loader/FileReuqest';
 import { IFileRequestResponse } from "../../Loader/IFileRequestResponse";
 import { gl } from "../GL/webGlUtil";
 
-    export class GLTexture{
+export interface ITexture{
+
+    loadtexture();
+    bind( GL_TEXTURE_ID : number );
+    loadImage(source: any);
+    load_uintImage(source: Uint8Array , uWidth : number, uHeight : number )
+    changeFilter(filterMethod:number);
+    changeClamp(clampMethod : number );
+}
+    export class GLTexture implements ITexture{
 
         private _texture : WebGLTexture = gl.createTexture();
         private _textureType : number ;
@@ -173,7 +182,7 @@ import { gl } from "../GL/webGlUtil";
     }
     
 
-    export class CubeMapTexture implements IFileRequestResponse{
+    export class CubeMapTexture implements IFileRequestResponse, ITexture{
 
         private a1 = "resources\\images\\cm_back.png   "     ;
         private a2 = "resources\\images\\cm_bottom.png "     ;
@@ -219,11 +228,20 @@ import { gl } from "../GL/webGlUtil";
             this.texture = gl.createTexture();
             
         }
-        public bind( ){
+
+        loadImage( source:TexImageSource[] ) {
+            //throw new Error('Method not implemented.');
+        }
+        load_uintImage(source: Uint8Array, uWidth: number, uHeight: number) {
+            //throw new Error('Method not implemented.');
+        }
+
+        public bind( GL_TEXTURE_ID : number = gl.TEXTURE0 ){
+            gl.activeTexture(  GL_TEXTURE_ID );
             gl.bindTexture(   gl.TEXTURE_CUBE_MAP, this.texture);
         }
 
-        private LoadTexture(){
+        public loadtexture(){
                 this.texture = gl.createTexture();
                 gl.bindTexture(   gl.TEXTURE_CUBE_MAP, this.texture);
         
@@ -250,7 +268,7 @@ import { gl } from "../GL/webGlUtil";
             for (let i = 0; i < asset.length; i++) {
                 this.images.push( asset[i].data )
             }
-            this.LoadTexture();
+            this.loadtexture();
             console.log("RECIEVED STUFF ");
         }
 
@@ -260,11 +278,11 @@ import { gl } from "../GL/webGlUtil";
 
         public changeFilter(filterMethod:number = gl.LINEAR){
             this._filtrMethod = filterMethod;
-            this.LoadTexture();
+            this.loadtexture();
         }
         public changeClamp(clampMethod : number =  gl.CLAMP_TO_EDGE ){
             this._clampMethod = clampMethod;
-            this.LoadTexture();
+            this.loadtexture();
         }
 
 

@@ -5,8 +5,7 @@ import { testClass } from "./test";
 import { GLOBAL_WORLD, World } from './World/World';
 import { FileRequest } from './Loader/FileReuqest';
 import { IFileRequestResponse } from './Loader/IFileRequestResponse';
-import { CubeMaterial } from './BaseObject/Components/GLMaterial';
-
+    
     export class startClass implements IFileRequestResponse{
 
         

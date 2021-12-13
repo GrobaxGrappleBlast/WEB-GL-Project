@@ -5,7 +5,7 @@ import { toRadians } from "./Math/TSM_Library/constants";
 import { mat4 } from "./Math/TSM_Library/mat4";
 import { vec3 } from "./Math/TSM_Library/vec3";
 import { gl } from './BaseObject/GL/webGlUtil';
-import { GLShader, DefaultShader2 } from './BaseObject/GL/GLShader';
+import { GLShader, DefaultShader } from './BaseObject/GL/GLShader';
 import { Vector2, Vector3 } from "three";
 
     export class testClass {
@@ -16,7 +16,7 @@ import { Vector2, Vector3 } from "three";
         private modelYRotationRadians = this.degToRad(0);
 
         
-        private shader : DefaultShader2 = new DefaultShader2("shader");
+        private shader : DefaultShader = new DefaultShader("shader");
         private positionLocation = this.shader.getAttributeLocation("a_position");
         private matrixLocation   = this.shader.getUniformLocation("u_matrix"); 
         private textureLocation  = this.shader.getUniformLocation("u_texture");

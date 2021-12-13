@@ -57,7 +57,6 @@ import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
 
         public MESHES      : GLMesh[] = [];
         public MATERIALS   : MMat[] = [];
-
         private loaded      : boolean = false;
 
 
@@ -72,7 +71,6 @@ import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
                 e.updateFilter(val);
             });
         }
-
 
         public bind(): void{
             if(this.loaded)
@@ -113,8 +111,8 @@ import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
             var JSON : JSON_3DSCENE_SORTER = asset.data; 
      
             this.MESHES.push( JSON.getMeshes()[0]);
-            //this.MATERIALS.push( new GLMaterial("mymat") );
-            this.MATERIALS.push( new CubeMaterial("mymat") );
+            this.MATERIALS.push( new GLMaterial("mymat") );
+            //this.MATERIALS.push( new CubeMaterial("mymat") );
             this.MATERIALS[0]._meshIndicees.push(0);
             
             this.MESHES[0].loadShaderLocations(this.MATERIALS[0]);

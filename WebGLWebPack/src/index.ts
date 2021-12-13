@@ -2,7 +2,7 @@
 import { startClass } from './WEBGL/src/main';
 import { gl, WebGLUtil } from './WEBGL/src/BaseObject/GL/webGlUtil';
 import { AssetManager } from './WEBGL/src/Loader/Assets/AssetManager';
-import { GLShader, DefaultShader2 } from './WEBGL/src/BaseObject/GL/GLShader';
+import { GLShader } from './WEBGL/src/BaseObject/GL/GLShader';
 import { mat4 } from './WEBGL/src/Math/TSM_Library/mat4';
 import { vec3 } from './WEBGL/src/Math/TSM_Library/vec3';
 import { toRadians } from './WEBGL/src/Math/TSM_Library/constants';

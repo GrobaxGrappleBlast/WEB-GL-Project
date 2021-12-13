@@ -146,12 +146,8 @@ import { gl } from "./webGlUtil";
 
 			void main(){
 				fragTexCord = a_texCord;
-				frag_normal = (worldMatrix * vec4(a_normal, 0.0)).xyz;
-				
-				//mat4 LOCAL =  (LocalTransformation) * ( Ltransform );
-				//vec4 vert =   LOCAL*  vec4(a_position, 1.0 );
-				//vec4 vert2 =  LocalTransformation *  vec4(a_position, 1.0);
-				//test = LOCAL ;
+				frag_normal = a_normal;
+				frag_normal = normalize(a_position);//(worldMatrix * vec4(a_normal, 0.0)).xyz;
 
 				gl_Position = (projMatrix * viewMatrix * worldMatrix *  vec4(a_position, 1.0))  ;
 			}
@@ -163,12 +159,9 @@ import { gl } from "./webGlUtil";
 
 			varying vec2 fragTexCord;
 			varying vec3 frag_normal;
-			//varying vec3 v_normal;
 
-			//uniform samplerCube cubeTexture;
 			uniform sampler2D base;
-			//uniform sampler2D emit;
-			//uniform sampler2D rough;
+			uniform samplerCube cubeTexture;
 
 			void main(){
 				
@@ -179,19 +172,16 @@ import { gl } from "./webGlUtil";
 				vec3 sunDIR   = normalize(vec3(1.0,-4.0,0.0));
 				vec3 lightINT = ambINT + sunINT + dot( frag_normal , sunDIR ) ;
 
-				vec4 texBase    = texture2D( base 	,fragTexCord	);
-				//vec4 texEmit  = texture2D( emit 	,fragTexCord	);
-				//vec4 texRough = texture2D( rough	,fragTexCord	);
+				vec4 texBase    = texture2D( base 	, fragTexCord	);
+				vec4 cubeTex    = textureCube( cubeTexture 	,  frag_normal  ); //normalize(frag_normal)	);
 
-				//gl_FragColor = textureCube(u_texture, normalize(v_normal));
-				gl_FragColor = vec4( texBase.rgb * lightINT , texBase.a );// + texEmit ;
+				//gl_FragColor = textureCube(cubeTexture, normalize(v_normal));
+				//gl_FragColor = cubeTex; //vec4( texBase.rgb * lightINT , texBase.a ) + ;
+				gl_FragColor = vec4( texBase.rgb * lightINT , texBase.a ) + ( 0.2* textureCube(cubeTexture,frag_normal));
 				
 			}
-
-
 			`;
-
-			super(name, _vShaderSource, _fShaderSource);
+			super("GL SHADER ", _vShaderSource, _fShaderSource);
 			
 		}
 	}
@@ -228,7 +218,6 @@ import { gl } from "./webGlUtil";
 
 			uniform samplerCube u_texture;
 			
-
 			void main() {
 			   gl_FragColor = textureCube(u_texture, normalize(v_normal));
 			}

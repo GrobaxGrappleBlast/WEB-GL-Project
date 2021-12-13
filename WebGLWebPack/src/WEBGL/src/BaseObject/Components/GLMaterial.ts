@@ -1,8 +1,10 @@
 import { GLShader, DefaultShader, DefaultShader2 } from '../GL/GLShader';
 import { mat4 } from '../../Math/TSM_Library/mat4';
 import { gl } from '../GL/webGlUtil';
-import { GLTexture, LoadableTexture, CubeMapTexture } from './GLTexture';
+import { GLTexture, LoadableTexture, CubeMapTexture, ITexture } from './GLTexture';
 import { HashArray } from '../HashArray';
+
+
 
 export abstract class Material{
 
@@ -51,55 +53,55 @@ export abstract class Material{
     public abstract updateOther(val:number);
     public abstract updateFilter(val:number);
 }
+
+export class TextureData{
+
+    public uniform      : WebGLUniformLocation   ;
+    public textureNum   : number                 ;
+    public Texture      : ITexture               ;     
+    public GL_TEXTURELOC: number                 ;
+    
+    public constructor(
+        
+        uniform : WebGLUniformLocation ,
+        textureNum  : number, 
+        Texture : ITexture  ,
+        GL_TEXTURELOC: number  
+        ){
+            this.uniform    = uniform     ; 
+            this.textureNum = textureNum  ; 
+            this.Texture= Texture; 
+            this.GL_TEXTURELOC =  GL_TEXTURELOC;
+        }
+
+}
 export abstract class Material_02 extends Material{
 
-    private _texture : {[index:number]:GLTexture} = {};
-    private _TextureUniform : {[index:number]:WebGLUniformLocation} = {};
-    private _TectureGLNumber : {[index:number]:number} = {};
-    private _texINDI : number[] = [];
-
+    public data     : HashArray<TextureData> = new HashArray<TextureData>();
+ 
     public constructor( name : string ){
-        
-        super( new DefaultShader(name) );
-        
+        super( new DefaultShader(name) );   
     }
-
-    public addTexture( tex : GLTexture, texUniform : WebGLUniformLocation, TextureNumber : number, GL_UNIF_NAME : string, TEX_GL_INDEX : number){
-        this._texINDI.push(TextureNumber);
-        this._TextureUniform[  TextureNumber   ] = texUniform;
-        this._texture[  TextureNumber   ] = tex ;
-        this._TectureGLNumber[  TextureNumber   ] = TEX_GL_INDEX;
-    }   
 
     public use():void{
         this.shader.use();
     }
 
-
     public bind():void{
-        this._texINDI.forEach( texID  => {
-            gl.uniform1i(this._TextureUniform[texID], texID);
-        });
-
-        this._texINDI.forEach( texID  => {
-           this._texture[texID].bind(this._TectureGLNumber[texID]);
+        console.log("ASDASDAD");
+        this.data.forEach( (data,i) => {
+            gl.uniform1i(data.uniform , data.textureNum );
+            data.Texture.bind( data.GL_TEXTURELOC );
         });
     }
 
-    public updateOther(val:number){
-        this._texINDI.forEach( texID  => {
-            this._texture[texID].changeClamp(val);
-        });
-    }
-
-    public updateFilter(val:number){
-        this._texINDI.forEach( texID  => {
-            this._texture[texID].changeFilter(val);
-        });
-    }
+    public updateOther(val:number){}
+    public updateFilter(val:number){}
 }
 export class GLMaterial extends Material_02{
     
+    //private data     : HashArray<TextureData> = new HashArray<TextureData>();
+
     private _texBase : GLTexture;
     private _texEmit : GLTexture;
     private _texRoug : GLTexture;
@@ -118,39 +120,28 @@ export class GLMaterial extends Material_02{
         //this._texEmit =  new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_emissive.png" );
         //this._texRoug =  new LoadableTexture("resources\\3d\\broken_steampunk_clock\\textures\\Material_3_baseColor.png");
 
-        this.texInit(this._texBase, "base", 0 ,gl.TEXTURE0);
+        //this.texInit(this._texBase, "base", 0 ,gl.TEXTURE0);
         //this.texInit(this._texEmit, "emit", 1 ,gl.TEXTURE1);
         //this.texInit(this._texRoug, "rough",2 ,gl.TEXTURE2);
+        this.data.add(
+            new TextureData( 
+                this.shader.getUniformLocation("base"),0,
+                GLTexture.createCheckers(8),gl.TEXTURE0
+                ),
+            "base"
+        )
 
+        this.data.add( 
+            new TextureData( 
+            this.shader.getUniformLocation("cubeTexture"),1,
+            new CubeMapTexture,gl.TEXTURE1 ),"cubeTexture"
+        );
     }
 
-    private texInit( 
-            tex : GLTexture,
-            GL_UNIF_NAME : string ,
-            TextureNumber : number ,
-            TEX_GL_INDEX : number 
-        ):void{
-        if(tex != null){
-            var texUniform = this.shader.getUniformLocation(GL_UNIF_NAME);
-            this.addTexture(tex,texUniform,TextureNumber,GL_UNIF_NAME,TEX_GL_INDEX);
-        }
-    }
+
 }
 
 
-export class TextureData{
-
-    public uniform     : WebGLUniformLocation;
-    public textureNum  : number              ;
-    public cubeTexture : CubeMapTexture      ;
-    
-    public constructor(uniform : WebGLUniformLocation ,textureNum  : number, cubeTexture : CubeMapTexture  ){
-        this.uniform    = uniform     ; 
-        this.textureNum = textureNum  ; 
-        this.cubeTexture= cubeTexture; 
-    }
-
-}
 export class CubeMaterial extends Material {//extends Material_01{
 
     private texture  : WebGLTexture;
@@ -168,7 +159,8 @@ export class CubeMaterial extends Material {//extends Material_01{
             new TextureData( 
                 this.shader.getUniformLocation("u_texture"), 
                 gl.TEXTURE0 ,
-                new CubeMapTexture
+                new CubeMapTexture,
+                0
             ),
             "u_texture"
         );
@@ -182,7 +174,7 @@ export class CubeMaterial extends Material {//extends Material_01{
         
         this.data.forEach( (data,i) => {
             gl.uniform1i(data.uniform , i);
-            data.cubeTexture.bind();
+            data.Texture.bind(0);
         });
 
     }
@@ -190,14 +182,14 @@ export class CubeMaterial extends Material {//extends Material_01{
     public updateOther(val:number){
         this.data.forEach( (data,i) => {
             gl.uniform1i(data.uniform , i);
-            data.cubeTexture.bind();
+            data.Texture.bind(0);
         });
     }
 
     public updateFilter(val:number){
         this.data.forEach( (data,i) => {
             gl.uniform1i(data.uniform , i);
-            data.cubeTexture.bind();
+            data.Texture.bind(0);
         });
     }
 }
