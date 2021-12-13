@@ -50,6 +50,7 @@ export abstract class Material{
     }
 
     public abstract bind();
+    public abstract unBind();
     public abstract updateOther(val:number);
     public abstract updateFilter(val:number);
 }
@@ -98,46 +99,63 @@ abstract class Material_02 extends Material{
         this.shader.use();
     }
 
-    public bind():void{
+    public override bind():void{
         this.data.forEach( (data,i) => {
             gl.uniform1i(data.uniform , data.textureNum );
             data.Texture.bind( data.GL_TEXTURELOC );
+        });
+    }
+    public override unBind(){
+        this.data.forEach( (data,i) => {
+            gl.uniform1i(data.uniform , null );
+            data.Texture.unBind();
         });
     }
 
     public updateOther(val:number){}
     public updateFilter(val:number){}
 }
+
+class GlTexData{
+    role:string;
+    index:number;
+    public constructor(
+        role  :string,
+        index :number
+    ){
+        this.role  = role  ;
+        this.index = index ;
+    }
+}
 export class GLMaterial extends Material_02{
     
-    private textures : {[TexRole:string]:string} = {};
+    private gltexData :HashArray<GlTexData> = new HashArray<GlTexData>();
     
     public constructor(
         name :string,
         texturesIN : TextureDataInput[]
     ){  
         super("GLMaterials");
-        this.textures["diffuse"]    = "base";
-        this.textures["reflection"] = "cubeTexture";
+        this.gltexData.add(new GlTexData("base"         ,0),"diffuse");
+        this.gltexData.add(new GlTexData("cubeTexture"  ,1),"reflection");
 
-        var counter = 0;
         texturesIN.forEach( texture => {
-            if( this.textures[texture.role] != null ){
-                this.data.add(
-                    new TextureData( 
-                        this.shader.getUniformLocation( this.textures[texture.role] ),0 + counter,
-                        texture.texture ,gl.TEXTURE0 + counter
-                        ),
-                    this.textures[texture.role]
-                )    
-                counter++; 
-            }
+
+            var data = this.gltexData.getHash(texture.role);
+            this.data.add(
+                new TextureData( 
+                    this.shader.getUniformLocation( data.role ),data.index,
+                    texture.texture ,gl.TEXTURE0 + data.index
+                    ),
+                data.role
+            )    
+    
         });
 
     }
 }
 
-
+/*
 export class CubeMaterial extends Material {//extends Material_01{
 
     private texture  : WebGLTexture;
@@ -188,4 +206,4 @@ export class CubeMaterial extends Material {//extends Material_01{
             data.Texture.bind(0);
         });
     }
-}
+}*/

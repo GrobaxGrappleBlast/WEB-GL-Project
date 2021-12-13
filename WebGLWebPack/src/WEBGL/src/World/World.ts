@@ -8,7 +8,7 @@ import { GLMesh } from '../BaseObject/Components/GLMesh';
 
 import { DefaultShader, GLShader } from '../BaseObject/GL/GLShader';
 import { GLTexture, LoadableTexture, CubeMapTexture } from '../BaseObject/Components/GLTexture';
-import { GLMaterial, CubeMaterial, TextureDataInput } from '../BaseObject/Components/GLMaterial';
+import { GLMaterial, TextureDataInput } from '../BaseObject/Components/GLMaterial';
 import { Euler, Quaternion } from 'three';
 import { Material as MMat} from "../BaseObject/Components/GLMaterial"  
 
@@ -96,6 +96,7 @@ import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
                         this.MESHES[index].bind();
                         this.MESHES[index].draw();
                     });
+                    mat.unBind();
                 });
                 
                 GLOBAL_WORLD.rotateWorld(0.005)

@@ -6,6 +6,7 @@ export interface ITexture{
 
     loadtexture();
     bind( GL_TEXTURE_ID : number );
+    unBind();
     loadImage(source: any);
     load_uintImage(source: Uint8Array , uWidth : number, uHeight : number )
     changeFilter(filterMethod:number);
@@ -74,8 +75,10 @@ export interface ITexture{
             }
 
         }
-
+        
+        private THIS_GL_TEXTURE_ID:number;
         public bind( GL_TEXTURE_ID : number =  gl.TEXTURE0 ){
+            this.THIS_GL_TEXTURE_ID = GL_TEXTURE_ID;
             gl.activeTexture(  GL_TEXTURE_ID );
             gl.bindTexture(   gl.TEXTURE_2D, this._texture);
         }
@@ -95,7 +98,7 @@ export interface ITexture{
         }
         
         public unBind(){
-            gl.activeTexture(gl.TEXTURE0);
+            gl.activeTexture(this.THIS_GL_TEXTURE_ID);
             gl.bindTexture(this._textureType, null);
         }
 
@@ -236,9 +239,15 @@ export interface ITexture{
             //throw new Error('Method not implemented.');
         }
 
+        private THIS_GL_TEXTURE_ID : number ;
         public bind( GL_TEXTURE_ID : number = gl.TEXTURE0 ){
+            this.THIS_GL_TEXTURE_ID = GL_TEXTURE_ID;
             gl.activeTexture(  GL_TEXTURE_ID );
             gl.bindTexture(   gl.TEXTURE_CUBE_MAP, this.texture);
+        }
+        public unBind(){
+            gl.activeTexture(this.THIS_GL_TEXTURE_ID);
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
         }
 
         public loadtexture(){
