@@ -124,14 +124,14 @@ import { mat3 } from '../Math/TSM_Library/mat3';
             GLOBAL_WORLD = this;
             var a = new FileRequest("resources\\sphere.json", this);
         }
-
+ 
         public onFileRecieved( asset : any){
             var JSON : JSON_3DSCENE_SORTER = asset.data; 
      
             this.MATERIALS.push( new GLMaterial(
                 "BaseMaterial",[
                  new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
-                // new TextureDataInput("normal"      ,  new LoadableTexture("resources\\images\\normalmap.png") ),
+                 new TextureDataInput("normal"      ,  new LoadableTexture("resources\\images\\normalmap.png") ),
                  new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
             ]));
             this.MESHES.push( JSON.getMeshes()[0]);
