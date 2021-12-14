@@ -1,7 +1,7 @@
-import { GLShader, DefaultShader, ShaderBackground } from '../GL/GLShader';
+import { GLShader, DefaultShader, ShaderBackground, GlTexData } from '../GL/GLShader';
 import { mat4 } from '../../Math/TSM_Library/mat4';
 import { gl } from '../GL/webGlUtil';
-import { GLTexture, LoadableTexture, CubeMapTexture, ITexture } from './GLTexture';
+import { GLTexture, LoadableTexture, CubeMapTexture, ITexture, WhiteSTDTexture } from './GLTexture';
 import { HashArray } from '../HashArray';
 import { GLOBAL_WORLD } from '../../World/World';
 import { vec3 } from '../../Math/TSM_Library/vec3';
@@ -13,10 +13,12 @@ export abstract class Material{
     public shader : GLShader;
     public Index : number;
     public _meshIndicees : number[] = [];
-    public name():string{return this.shader._name}; 
+    //public name():string{return this.shader._name}; 
+    public name :string;
 
-    public constructor( shader : GLShader ){
+    public constructor( name:string,shader : GLShader ){
         this.shader = shader;
+        this.name = name;
         this.VERTEX_POSITION    = this.shader.getAttributeLocation(     "a_position"    );
         this.VERTEX_UV          = this.shader.getAttributeLocation(     "a_texCord"    );
         this.VERTEX_NORMAL      = this.shader.getAttributeLocation(     "a_normal"    );
@@ -96,19 +98,32 @@ class TextureData{
 abstract class Material_02 extends Material{
 
     public data     : HashArray<TextureData> = new HashArray<TextureData>();
-    
     public reflectionMatrix : mat4 = mat4.getIdentity();
     
 
-
-    public constructor( shader : GLShader ){
-        super( shader );   
-    
-    
+    public constructor( name:string,shader : GLShader ){
+        super( name,shader );       
     }
 
     public use():void{
+        
+        if( false ){ //!this.shader.isInUse()){
+
+            gl.uniform3fv(
+                this.shader.getUniformLocation( "eyePosition" ),
+                GLOBAL_WORLD.camPos.xyz
+            );
+                    
+            gl.uniformMatrix4fv(
+                this.shader.getUniformLocation( "reflectionMatrix" ),
+                false,
+                this.reflectionMatrix.values
+            );
+
+        }
+
         this.shader.use();
+
     }
 
     public override bind():void{
@@ -123,7 +138,7 @@ abstract class Material_02 extends Material{
             false,
             this.reflectionMatrix.values
         );
-
+        
         this.data.forEach( (data,i) => {
             gl.uniform1i(data.uniform , data.textureNum );
             data.Texture.bind( data.GL_TEXTURELOC );
@@ -140,7 +155,6 @@ abstract class Material_02 extends Material{
     public updateFilter(val:number){}
 }
 
-
 class Material_03 extends Material_02{
     
     
@@ -150,18 +164,42 @@ class Material_03 extends Material_02{
         texturesIN : TextureDataInput[],
         shader : GLShader
     ){  
-        super(shader);
+        super(name,shader);
 
+        // TODO provide UINT Texture for all unprovided textures 
+        var roleList : HashArray<boolean> = new HashArray<boolean>();
+
+        // SETUP TEXTURES FOR EVERY TEXTURE YOU HAVE RECIEVED;
         texturesIN.forEach( texture => {
             var data = this.shader.ShaderTextureData.getHash(texture.role);
+            roleList.add(true,texture.role);
             this.data.add(
                 new TextureData( 
                     this.shader.getUniformLocation( data.role ),data.index,
-                    texture.texture ,gl.TEXTURE0 + data.index
+                    texture.texture , data.GLTexNum
                     ),
                 data.role
             )    
         });
+        
+        var texList = this.shader.ShaderTextureData.getKeys();
+        texList.forEach( textureRole => {
+            if( ! roleList.hasIndex(textureRole) ){
+
+                var data = this.shader.ShaderTextureData.getHash(textureRole);
+                roleList.add(true,textureRole);
+                this.data.add(
+                    new TextureData( 
+                        this.shader.getUniformLocation( data.role ),data.index,
+                        new WhiteSTDTexture() , data.GLTexNum
+                        ),
+                    data.role
+                )    
+
+            }
+        });
+
+
 
     }
 }
@@ -174,7 +212,6 @@ export class GLMaterial extends Material_03{
         super( name, texturesIN, new DefaultShader(name) );
     }
 }
-
 
 export class BackgroundMaterial extends Material_03 {//extends Material_01{
 

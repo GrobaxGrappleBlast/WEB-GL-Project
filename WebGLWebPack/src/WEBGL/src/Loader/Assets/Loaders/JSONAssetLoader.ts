@@ -64,17 +64,17 @@ export class JSON_3DSCENE_SORTER{
         this.ASSET = asset;
 
         // MATERIALS 
-        var c = 0;
-        this.ASSET.materials.forEach(   imat => {
-            var material = this.OperateMaterial(imat) ;
-            this.matArr.add( 
-                material,
-                "default" + c++ + ""
-            )
-        });
+        //var c = 0;
+        //this.ASSET.materials.forEach(   imat => {
+        //    var material = this.OperateMaterial(imat) ;
+        //    this.matArr.add( 
+        //        material,
+        //        "default" + c++ + ""
+        //    )
+        //});
 
         // MESHES 
-        c = 0;
+        var c = 0;
         this.ASSET.meshes.forEach(      imesh => {
             
             var mesh = this.OperateMesh(imesh);
@@ -83,17 +83,17 @@ export class JSON_3DSCENE_SORTER{
             mesh.name = imesh.name;
 
             this.meshArr.add(mesh, imesh.name);
-            this.matArr.get(imesh.materialindex)._meshIndicees.push(c);
+            //    this.matArr.get(imesh.materialindex)._meshIndicees.push(c);
             c++;
         });
 
 
         // LOAD MATERIALS INTO MESHES 
-        this.matArr.forEach( MAT => {
-            MAT._meshIndicees.forEach( i => {
-                this.meshArr.get(i).loadShaderLocations(MAT);
-            });
-        });
+        //this.matArr.forEach( MAT => {
+        //    MAT._meshIndicees.forEach( i => {
+        //        this.meshArr.get(i).loadShaderLocations(MAT);
+        //    });
+        //});
 
 
     
@@ -192,7 +192,7 @@ export class JSON_3DSCENE_SORTER{
 
     private OperateMaterial( mat: Material):GLMaterial{
         return  new GLMaterial(
-            "BaseMaterial",
+            "JSON",
             [
              new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
              new TextureDataInput("reflection"  ,  new CubeMapTexture() ),

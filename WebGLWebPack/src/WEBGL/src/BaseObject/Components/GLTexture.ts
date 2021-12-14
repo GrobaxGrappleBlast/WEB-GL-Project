@@ -41,8 +41,8 @@ export interface ITexture{
             this.loadtexture();
         }
 
-        private isUint : boolean = false;
-        private source : any;
+        public isUint : boolean = false;
+        public source : any;
         public loadtexture(){
             
             this.bind();
@@ -149,6 +149,24 @@ export interface ITexture{
         }
     }
 
+    export class WhiteSTDTexture extends GLTexture {
+
+        public constructor(){
+            super();
+            this.tex();
+            this.isUint = true;
+        }
+
+        public tex() : void {
+            var a : Uint8Array = new Uint8Array(4);  
+                a[0] = (255); // red 
+                a[1] = (255); // green
+                a[2] = (255); // blue 
+                a[3] = (255); // alpha 
+            this.source = a;
+        }
+
+    }
     
     export class LoadableTexture extends GLTexture implements IFileRequestResponse{
         

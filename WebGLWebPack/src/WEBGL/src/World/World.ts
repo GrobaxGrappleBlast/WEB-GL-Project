@@ -96,7 +96,7 @@ import { mat3 } from '../Math/TSM_Library/mat3';
                 mat.updateUniform_World(      GLOBAL_WORLD.worldMatrix);
                 mat.updateUniform_Camera(     GLOBAL_WORLD.viewMatrix );
                 mat.updateUniform_Projection( GLOBAL_WORLD.projMatrix )
-                mat.bind();
+                mat.bind()
             });
         }
 
@@ -111,7 +111,7 @@ import { mat3 } from '../Math/TSM_Library/mat3';
                         this.MESHES[index].bind();
                         this.MESHES[index].draw();
                     });
-                    mat.unBind();
+                    
                 });
                 
                 GLOBAL_WORLD.rotateWorld(0.01   )
@@ -129,7 +129,7 @@ import { mat3 } from '../Math/TSM_Library/mat3';
             var JSON : JSON_3DSCENE_SORTER = asset.data; 
      
             this.MATERIALS.push( new GLMaterial(
-                "BaseMaterial",[
+                "BaseMaterial_buptidu",[
                  new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
                  new TextureDataInput("normal"      ,  new LoadableTexture("resources\\images\\normalmap.png") ),
                  new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
@@ -141,12 +141,41 @@ import { mat3 } from '../Math/TSM_Library/mat3';
             
             this.MATERIALS.push( new BackgroundMaterial(
                 "reflection",[
-                    //new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
+                    new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
                     new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
             ]));
             this.MESHES.push( GLMesh.createBackgroundFarPlaneMesh() );
             this.MATERIALS[1]._meshIndicees.push(1);
             this.MESHES[1].loadShaderLocations(this.MATERIALS[1]);
+            
+
+            this.MATERIALS.push( new GLMaterial(
+                "FLOORMAT",[
+                 //new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
+                 new TextureDataInput("normal"      ,  new LoadableTexture("resources\\images\\normalmap.png") ),
+                 //new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
+            ]));
+            this.MESHES.push( new GLMesh(
+                [
+                    -2 , -1 , -1 ,
+                    -2 , -5 , -1 ,
+                     2 , -1 , -1 ,
+                     2 , -5 , -1 ,
+                ],[
+                    0,1,
+                    1,1,
+                    0,0,
+                    1,0
+                ],[
+                    0,1,2,
+                    3,2,1
+                ]
+
+            ));
+            this.MATERIALS[2]._meshIndicees.push(2);
+            this.MESHES[2].loadShaderLocations(this.MATERIALS[2]);
+
+
 
            this.loaded = true;
 

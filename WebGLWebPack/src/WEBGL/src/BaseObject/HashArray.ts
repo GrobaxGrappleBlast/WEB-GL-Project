@@ -1,7 +1,7 @@
 export class HashArray<T>{
 
     private hashList : { [hash:string]:number } = {}
-    private debugHashList : string[] = [];
+    private keyList : string[] = [];
     private elemList : T[] = []; 
     public length = 0;
 
@@ -10,16 +10,22 @@ export class HashArray<T>{
 
     // ADD THINGS
     public add(element : T, hash :string){
-
         if( !(this.hasIndex(hash)) ){
-
             this.hashList[hash] = this.length;
             this.elemList.push(element);
-            this.debugHashList.push(hash);
+            this.keyList.push(hash);
             this.length++;
-       
         }
+    }
+    
 
+
+    public GenerateCheckList<A>( value : A ){
+        let arr :HashArray<A> = new HashArray<A>();
+        this.keyList.forEach( n => {
+            arr[n] = value;
+        });
+        return arr;
     }
 
     // CHANGETHINGS
@@ -63,5 +69,9 @@ export class HashArray<T>{
 
     public getNameList():  { [hash:string]:number} {
         return this.hashList;
+    }
+
+    public getKeys(){
+        return this.keyList;
     }
 }

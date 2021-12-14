@@ -16,6 +16,9 @@ import { HashArray } from '../HashArray';
 		private uniNames : string[]  = [];
 
 		public ShaderTextureData :HashArray<GlTexData> = new HashArray<GlTexData>();
+		public getTextures() : GlTexData[]{
+			return this.ShaderTextureData.getElemList();
+		}
 
 		/**
 		 * Creates a new Shader Object, that contains vertex shader and fragment shader
@@ -39,6 +42,10 @@ import { HashArray } from '../HashArray';
 		public use(): void {
 			gl.useProgram(this._program);
 			this.checkForErrors();
+		}
+
+		public isInUse():boolean{
+			return gl.isProgram(this._program);
 		}
 
 		private loadShader(src: string, shaderType: number): WebGLShader {
@@ -129,22 +136,24 @@ import { HashArray } from '../HashArray';
 		}
 	}
 
-
-
 	export class GlTexData{
 		role:string;
 		index:number;
+		GLTexNum:number;
 		public constructor(
 			role  :string,
-			index :number
+			index :number,
+			GLTexNum:number
 		){
 			this.role  = role  ;
 			this.index = index ;
+			this.GLTexNum = GLTexNum;
 		}
 	}
 	export class DefaultShader extends GLShader{
 
 		public constructor(name : string){
+			
 			let  _vShaderSource : string = `
 			precision mediump float; 	
 
@@ -208,25 +217,21 @@ import { HashArray } from '../HashArray';
 				vec3 sunINT   = vec3(0.7,0.6,0.1);
 				vec3 sunDIR   = normalize(vec3(1.0,-4.0,0.0));
 				vec3 lightINT = ambINT + sunINT + dot( newNormal , sunDIR ) ;
-
 				
 				vec4 cubeTex    = textureCube( cubeTexture 	,  reflect(incident,  newNormal)  ); //normalize(frag_normal)	);
 
-				
-				//gl_FragColor = textureCube(cubeTexture, normalize(v_normal));
 				//gl_FragColor = cubeTex; //vec4( texBase.rgb * lightINT , texBase.a ) + ;
 				gl_FragColor = vec4( texBase.rgb * lightINT , texBase.a ) + ( 0.2 * cubeTex );
 				
 			}
 			`;
-			super("DEFAULT_"+name, _vShaderSource, _fShaderSource);
-			this.ShaderTextureData.add(new GlTexData("base"         ,0),"diffuse");
-			this.ShaderTextureData.add(new GlTexData("normal"  ,1)     ,"normal");
-			this.ShaderTextureData.add(new GlTexData("cubeTexture"  ,2),"reflection");
 
-			
+			super("DEFAULT_"+name, _vShaderSource, _fShaderSource);
+			this.ShaderTextureData.add(new GlTexData("base"         ,0, gl.TEXTURE0),"diffuse"	);
+			this.ShaderTextureData.add(new GlTexData("normal"  		,1, gl.TEXTURE1),"normal"	);
+			this.ShaderTextureData.add(new GlTexData("cubeTexture"  ,2, gl.TEXTURE2),"reflection");
 		}
-		
+
 	}
 
 	export class ShaderBackground extends GLShader{
@@ -293,8 +298,8 @@ import { HashArray } from '../HashArray';
 			}
 			`;
 			super("BACKGROUND_", _vShaderSource, _fShaderSource);
-			this.ShaderTextureData.add(new GlTexData("base"         ,0),"diffuse");
-			this.ShaderTextureData.add(new GlTexData("cubeTexture"  ,1),"reflection");
+			this.ShaderTextureData.add(new GlTexData("base"         ,0, gl.TEXTURE0),"diffuse");
+			this.ShaderTextureData.add(new GlTexData("cubeTexture"  ,1, gl.TEXTURE1),"reflection");
 		}
 	}
 	
