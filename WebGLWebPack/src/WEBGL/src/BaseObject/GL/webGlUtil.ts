@@ -22,6 +22,9 @@
                 throw new Error("Unable to initialize WebGL");
             }
             gl.enable(gl.DEPTH_TEST);
+            gl.depthMask( true );
+            gl.disable(gl.BLEND);
+            
             return canvas;
         }
     }

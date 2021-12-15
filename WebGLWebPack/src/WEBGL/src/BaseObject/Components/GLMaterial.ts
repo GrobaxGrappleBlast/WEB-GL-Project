@@ -1,24 +1,28 @@
-import { GLShader, DefaultShader, ShaderBackground, GlTexData } from '../GL/GLShader';
+import { GLShader, DefaultShader, ShaderBackground, GlTexData, DefaultShadowShader } from '../GL/GLShader';
 import { mat4 } from '../../Math/TSM_Library/mat4';
 import { gl } from '../GL/webGlUtil';
-import { GLTexture, LoadableTexture, CubeMapTexture, ITexture, WhiteSTDTexture } from './GLTexture';
+import { GLTexture, LoadableTexture, CubeMapTexture, ITexture, WhiteSTDTexture, GLShadowTexture } from './GLTexture';
 import { HashArray } from '../HashArray';
 import { GLOBAL_WORLD } from '../../World/World';
 import { vec3 } from '../../Math/TSM_Library/vec3';
+import { Camera } from '../../Loader/Assets/Loaders/JSONAssetLoader';
 
 
 
-export abstract class Material{
+export abstract class GLAMaterial{
 
     public shader : GLShader;
     public Index : number;
     public _meshIndicees : number[] = [];
+
     //public name():string{return this.shader._name}; 
     public name :string;
 
     public constructor( name:string,shader : GLShader ){
         this.shader = shader;
         this.name = name;
+
+
         this.VERTEX_POSITION    = this.shader.getAttributeLocation(     "a_position"    );
         this.VERTEX_UV          = this.shader.getAttributeLocation(     "a_texCord"    );
         this.VERTEX_NORMAL      = this.shader.getAttributeLocation(     "a_normal"    );
@@ -51,10 +55,6 @@ export abstract class Material{
 
     public use():void{
         this.shader.use();
-    }
-    
-    public static CreateShader(name:string): GLShader{
-        return  new DefaultShader(name);
     }
 
     public abstract bind();
@@ -95,32 +95,16 @@ class TextureData{
         }
 
 }
-abstract class Material_02 extends Material{
+abstract class Material_02 extends GLAMaterial{
 
     public data     : HashArray<TextureData> = new HashArray<TextureData>();
     public reflectionMatrix : mat4 = mat4.getIdentity();
     
-
     public constructor( name:string,shader : GLShader ){
         super( name,shader );       
     }
 
     public use():void{
-        
-        if( false ){ //!this.shader.isInUse()){
-
-            gl.uniform3fv(
-                this.shader.getUniformLocation( "eyePosition" ),
-                GLOBAL_WORLD.camPos.xyz
-            );
-                    
-            gl.uniformMatrix4fv(
-                this.shader.getUniformLocation( "reflectionMatrix" ),
-                false,
-                this.reflectionMatrix.values
-            );
-
-        }
 
         this.shader.use();
 
@@ -130,7 +114,7 @@ abstract class Material_02 extends Material{
 
         gl.uniform3fv(
             this.shader.getUniformLocation( "eyePosition" ),
-            GLOBAL_WORLD.camPos.xyz
+            GLOBAL_WORLD.getActiveCameratPosition().xyz
         );
                 
         gl.uniformMatrix4fv(
@@ -138,11 +122,13 @@ abstract class Material_02 extends Material{
             false,
             this.reflectionMatrix.values
         );
-        
+
         this.data.forEach( (data,i) => {
             gl.uniform1i(data.uniform , data.textureNum );
             data.Texture.bind( data.GL_TEXTURELOC );
         });
+
+
     }
     public override unBind(){
         this.data.forEach( (data,i) => {
@@ -155,7 +141,7 @@ abstract class Material_02 extends Material{
     public updateFilter(val:number){}
 }
 
-class Material_03 extends Material_02{
+export class Material_03 extends Material_02{
     
     
 
@@ -185,19 +171,23 @@ class Material_03 extends Material_02{
         var texList = this.shader.ShaderTextureData.getKeys();
         texList.forEach( textureRole => {
             if( ! roleList.hasIndex(textureRole) ){
-
                 var data = this.shader.ShaderTextureData.getHash(textureRole);
-                roleList.add(true,textureRole);
-                this.data.add(
-                    new TextureData( 
-                        this.shader.getUniformLocation( data.role ),data.index,
-                        new WhiteSTDTexture() , data.GLTexNum
-                        ),
-                    data.role
-                )    
-
+               
+                    roleList.add(true,textureRole);
+                    this.data.add(
+                        new TextureData( 
+                            this.shader.getUniformLocation( data.role ),data.index,
+                            new WhiteSTDTexture(10) , data.GLTexNum
+                            ),
+                        data.role
+                    )    
+                
             }
         });
+
+
+
+
 
 
 
@@ -209,7 +199,9 @@ export class GLMaterial extends Material_03{
         name :string,
         texturesIN : TextureDataInput[],
     ){
-        super( name, texturesIN, new DefaultShader(name) );
+
+        texturesIN.push( new TextureDataInput("shadowTexture",  new GLShadowTexture() ))
+        super( name, texturesIN, new DefaultShadowShader(name) );
     }
 }
 

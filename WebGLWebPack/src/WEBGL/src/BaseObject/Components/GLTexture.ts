@@ -1,6 +1,7 @@
 import { FileRequest, FileRequestBundle } from '../../Loader/FileReuqest';
 import { IFileRequestResponse } from "../../Loader/IFileRequestResponse";
 import { gl } from "../GL/webGlUtil";
+import { GLOBAL_WORLD } from '../../World/World';
 
 export interface ITexture{
 
@@ -116,7 +117,7 @@ export interface ITexture{
                     if(bool){
                         curr = 255;
                     }else{
-                        curr = 0;
+                        curr = 10;
                     }
 
                     for (let i = 0; i < 8; i++) {
@@ -151,19 +152,18 @@ export interface ITexture{
 
     export class WhiteSTDTexture extends GLTexture {
 
-        public constructor(){
+        public constructor( r : number = 0, g : number = 0,b : number = 0 ){
             super();
-            this.tex();
-            this.isUint = true;
+            this.tex(r,g,b);
         }
 
-        public tex() : void {
+        public tex(r : number = 0, g : number = 0,b : number = 0) : void {
             var a : Uint8Array = new Uint8Array(4);  
-                a[0] = (255); // red 
-                a[1] = (255); // green
-                a[2] = (255); // blue 
+                a[0] = (r); // red 
+                a[1] = (g); // green
+                a[2] = (b); // blue 
                 a[3] = (255); // alpha 
-            this.source = a;
+            this.load_uintImage(a,1,1)
         }
 
     }
@@ -310,6 +310,51 @@ export interface ITexture{
             this._clampMethod = clampMethod;
             this.loadtexture();
         }
+
+
+    }
+
+    
+    export class GLShadowTexture implements ITexture{
+
+        private requests: string[] = [] ;
+
+        private texture : WebGLTexture;
+        private images  : TexImageSource[] = [];
+        private _clampMethod : number ;
+        private _filtrMethod : number ;
+
+
+        //private UintWidth   : number = 1;
+        //private UintHeight  : number = 1;
+        private loaded :boolean = false;
+
+        public constructor(
+            clampMethod : number =  gl.CLAMP_TO_EDGE ,
+            filterMethod:number = gl.LINEAR
+        ){
+
+            this._clampMethod = clampMethod;
+            this._filtrMethod = filterMethod;
+            
+        }
+
+        loadImage( source:TexImageSource[] ){}
+        load_uintImage(source: Uint8Array, uWidth: number, uHeight: number) {}
+
+        private THIS_GL_TEXTURE_ID : number ;
+        public bind( GL_TEXTURE_ID : number = gl.TEXTURE0 ){
+            this.THIS_GL_TEXTURE_ID = GL_TEXTURE_ID;
+            gl.activeTexture(  GL_TEXTURE_ID );
+            gl.bindTexture(   gl.TEXTURE_CUBE_MAP, GLOBAL_WORLD.staticShadowTexture);
+        }
+        public unBind(){
+            gl.activeTexture(this.THIS_GL_TEXTURE_ID);
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+        }
+        public loadtexture(){}
+        public changeFilter(filterMethod:number = gl.LINEAR){}
+        public changeClamp(clampMethod : number =  gl.CLAMP_TO_EDGE ){}
 
 
     }

@@ -1,11 +1,12 @@
 import { AttributeInfo } from "../GL/GLBuffer";
 import { gl } from "../GL/webGlUtil";
 import { GLBuffer } from "../GL/GLBuffer"
-import { GLMaterial, Material } from './GLMaterial';
+import { GLMaterial, GLAMaterial } from './GLMaterial';
 import { mat4 } from '../../Math/TSM_Library/mat4';
 import { ITransformable } from './ITransformable';
 import { vec3 } from "../../Math/TSM_Library/vec3";
 import { GLOBAL_WORLD } from '../../World/World';
+import { GLShader } from '../GL/GLShader';
 
     abstract class MeshTracker{
         
@@ -31,7 +32,7 @@ import { GLOBAL_WORLD } from '../../World/World';
         public POSITION    : number; //mat.VERTEX_POSITION;
         public UV          : number;//mat.VERTEX_UV;
         public NORMAL      : number;//mat.VERTEX_NORMAL;
-        
+
         public constructor(
             verticies    : number[]= null,
             texCoords    : number[]= null,
@@ -52,9 +53,9 @@ import { GLOBAL_WORLD } from '../../World/World';
 
             this._bufferNames.push("face");
             this._buffers["face"] = new GLBuffer(123, gl.UNSIGNED_SHORT, gl.ELEMENT_ARRAY_BUFFER, gl.TRIANGLES);
+            
         }
         
-        private hasLoadedShader = false;
         private AssignThisBuffer(name:string, data : number[] ,attrLocation : number , pointSize : number, offset:number){
             
             let attr = new AttributeInfo( attrLocation, pointSize, offset);
@@ -68,9 +69,32 @@ import { GLOBAL_WORLD } from '../../World/World';
                 buffer.unbind();
             }
         }
-        public loadShaderLocations( mat : Material ){
+
+        /*
+        public loadShaderLocations( shader : GLShader ){
 
             this.hasLoadedShader = true;
+            this.POSITION    = shader.getAttributeLocation("a_position");   //.VERTEX_POSITION;
+            this.UV          = shader.getAttributeLocation("a_texCord");
+         
+            // ALL ATTRIBTES THAT HAS ATTRIBUTE DATA 
+            this.AssignThisBuffer( "loc" , this.verticies , this.POSITION , 3 , 0 );
+        
+            this.AssignThisBuffer( "uv" , this.texCoords , this.UV , 2 , 0 );
+
+            // FACE INDICIES DOESNOT HAVE ATTRIBUTE DATA .. WHO KNOWS WHY
+            this._buffers["face"].bind();
+            this._buffers["face"].pushData( this.faceIndecies );
+            this._buffers["face"].upload();
+            this._buffers["face"].unbind();
+
+            // UNIFORMS 
+            //this.transformLocation    = mat.LOCAL_VERT_TRANS;
+        }*/
+
+        public loadMaterialShaderLocations( mat : GLAMaterial ){
+
+            
             this.POSITION    = mat.VERTEX_POSITION;
             this.UV          = mat.VERTEX_UV;
             this.NORMAL      = mat.VERTEX_NORMAL;
@@ -88,17 +112,40 @@ import { GLOBAL_WORLD } from '../../World/World';
 
             // UNIFORMS 
             //this.transformLocation    = mat.LOCAL_VERT_TRANS;
-           
         }
 
-        public bind(){
+        public loadLocations( shader : GLShader = null ){
             
-            if(this.NotInversed){
-                gl.enable(gl.CULL_FACE);
+            var vPos;
+            var vUV ;
+            if( shader != null ){
+                vPos    = shader.getAttributeLocation("a_position");
+                vUV     = shader.getAttributeLocation("a_texCord");
             }else{
-                gl.disable(gl.CULL_FACE);
+                //var b = GLOBAL_WORLD;
+                //var c = this.MaterialIndex;
+                //var a = GLOBAL_WORLD.MATERIALS[this.MaterialIndex];
+                vPos    = GLOBAL_WORLD.MATERIALS[this.MaterialIndex].VERTEX_POSITION;
+                vUV     = GLOBAL_WORLD.MATERIALS[this.MaterialIndex].VERTEX_UV;
             }
 
+                this.AssignThisBuffer( "loc" , this.verticies , vPos , 3 , 0 );
+            
+                this.AssignThisBuffer( "uv" , this.texCoords ,  vUV , 2 , 0 );
+
+                // FACE INDICIES DOESNOT HAVE ATTRIBUTE DATA .. WHO KNOWS WHY
+                this._buffers["face"].bind();
+                this._buffers["face"].pushData( this.faceIndecies );
+                this._buffers["face"].upload();
+                this._buffers["face"].unbind();
+            
+        }
+
+        public bind(shader : GLShader = null ){
+
+            this.CullingMethod.call(this);
+
+            this.loadLocations(shader);
             this._bufferNames.forEach(name => {
                 if(name == "norm"){
                     this._buffers[name].bind(true);    
@@ -106,13 +153,16 @@ import { GLOBAL_WORLD } from '../../World/World';
                     this._buffers[name].bind();    
                 }                                
             });
-
+           
             gl.uniformMatrix4fv(   this.transformLocation   , false, this.transform.values  );
         }
 
-        public draw(){
-            if(this.hasLoadedShader)
-                this._buffers["face"].draw();
+        public draw( ){
+            this._buffers["face"].draw();
+            this._bufferNames.forEach(name => {
+                this._buffers[name].unbind();
+            })
+                
         }
         
         public unbind(){
@@ -121,13 +171,32 @@ import { GLOBAL_WORLD } from '../../World/World';
             });
         }
 
-        public setInverse( Inverse : boolean = true ){
-            
-            if(Inverse){
-                gl.disable(gl.CULL_FACE);
-            }
+        private doubleSidedRender(){
+            //console.log("DOUBLE SIDED");
+            gl.disable(gl.CULL_FACE);
+        }
+        private frontRender(){
+            //console.log("FRONT SIDED");
+            gl.enable(gl.CULL_FACE);
+            gl.cullFace(gl.BACK);
+        }
+        private backRender(){
+            //console.log("BACK SIDED");
+            gl.enable(gl.CULL_FACE);
+            gl.cullFace(gl.FRONT);
+        }
 
-            this.NotInversed = !Inverse;
+        private CullingMethod = this.frontRender;
+
+        public enableDoubleSidedRender(){
+            this.CullingMethod = this.doubleSidedRender;
+        }
+
+        public enableFrontRender(){
+            this.CullingMethod = this.frontRender;
+        }
+        public enableBackRender(){
+            this.CullingMethod = this.backRender;
         }
 
         public static createBackgroundFarPlaneMesh(): GLMesh{
@@ -159,7 +228,6 @@ import { GLOBAL_WORLD } from '../../World/World';
                     ]
 
             );
-            mesh.setInverse();
             return mesh;
                
         }
