@@ -1,224 +1,111 @@
 import { GLShader, DefaultShader, ShaderBackground, GlTexData, DefaultShadowShader } from '../GL/GLShader';
 import { mat4 } from '../../Math/TSM_Library/mat4';
 import { gl } from '../GL/webGlUtil';
-import { GLTexture, LoadableTexture, CubeMapTexture, ITexture, WhiteSTDTexture, GLShadowTexture } from './GLTexture';
+import { GLTexture, LoadableTexture, CubeMapTexture, ITexture, GLShadowTexture } from './GLTexture';
 import { HashArray } from '../HashArray';
-import { GLOBAL_WORLD } from '../../World/World';
 import { vec3 } from '../../Math/TSM_Library/vec3';
 import { Camera } from '../../Loader/Assets/Loaders/JSONAssetLoader';
+import { CONTEXT } from '../../Context';
 
 
-
-export abstract class GLAMaterial{
-
-    public shader : GLShader;
-    public Index : number;
-    public _meshIndicees : number[] = [];
-
-    //public name():string{return this.shader._name}; 
-    public name :string;
-
-    public constructor( name:string,shader : GLShader ){
-        this.shader = shader;
-        this.name = name;
-
-
-        this.VERTEX_POSITION    = this.shader.getAttributeLocation(     "a_position"    );
-        this.VERTEX_UV          = this.shader.getAttributeLocation(     "a_texCord"    );
-        this.VERTEX_NORMAL      = this.shader.getAttributeLocation(     "a_normal"    );
-
-        this.UNIFORM_WORLD      = this.shader.getUniformLocation(       "worldMatrix"   );
-        this.UNIFORM_CAMERA     = this.shader.getUniformLocation(       "viewMatrix"    );
-        this.UNIFORM_PROJECTION = this.shader.getUniformLocation(       "projMatrix"    ); 
-    }
-
-    public VERTEX_POSITION  : number;
-    public VERTEX_UV        : number;
-    public VERTEX_NORMAL    : number;
-
-    public UNIFORM_WORLD     :WebGLUniformLocation;   
-    public UNIFORM_CAMERA    :WebGLUniformLocation;
-    public UNIFORM_PROJECTION:WebGLUniformLocation;
-
-    
-    public updateUniform_World(matrix : mat4){
-        gl.uniformMatrix4fv(this.UNIFORM_WORLD      , false, matrix.values );
-    }
-    
-    public updateUniform_Camera(matrix : mat4){
-        gl.uniformMatrix4fv(this.UNIFORM_CAMERA     , false, matrix.values  );
-    }
-    
-    public updateUniform_Projection(matrix : mat4){
-        gl.uniformMatrix4fv(this.UNIFORM_PROJECTION , false, matrix.values  );
-    }
-
-    public use():void{
-        this.shader.use();
-    }
-
-    public abstract bind();
-    public abstract unBind();
-    public abstract updateOther(val:number);
-    public abstract updateFilter(val:number);
-}
 
 export class TextureDataInput{
     public role : string; 
-    public texture : ITexture;
+    public request : string;
     public constructor(
         role    : string, 
-        texture : ITexture
+        request : string
         ){  
-            this.role    =role    ;
-            this.texture =texture ;
+            this.role = role    ;
+            this.request  = request ;
         }
 }
-class TextureData{
 
-    public uniform      : WebGLUniformLocation   ;
-    public textureNum   : number                 ;
-    public Texture      : ITexture               ;     
-    public GL_TEXTURELOC: number                 ;
-    
-    public constructor(
-        
-        uniform : WebGLUniformLocation ,
-        textureNum  : number, 
-        Texture : ITexture  ,
-        GL_TEXTURELOC: number  
-        ){
-            this.uniform    = uniform     ; 
-            this.textureNum = textureNum  ; 
-            this.Texture= Texture; 
-            this.GL_TEXTURELOC =  GL_TEXTURELOC;
-        }
+export abstract class GLAMaterial{
 
-}
-abstract class Material_02 extends GLAMaterial{
+    public name         : string;
+    public Index        : number;
+    public shader       : number;
 
-    public data     : HashArray<TextureData> = new HashArray<TextureData>();
+    public _meshIndicees: number[] = [];
+    //public data         : HashArray<TextureData> = new HashArray<TextureData>();
+    public textures     : GlTexData[] = [];
+    public cubeTextures : GlTexData[] = [];
+
     public reflectionMatrix : mat4 = mat4.getIdentity();
     
-    public constructor( name:string,shader : GLShader ){
-        super( name,shader );       
+    public constructor( name:string, textureRequests:TextureDataInput[], cubeTextureRequests:TextureDataInput[] , shader : string ){
+        
+        this.shader = CONTEXT.requestShader(shader);
+        this.name = name; 
+        
+        var a = CONTEXT.SHADERS; 
+        let data = CONTEXT.SHADERS.get(this.shader).ShaderTextureData;
+        var curr :GlTexData;
+
+        if(textureRequests != null )
+        textureRequests.forEach( texture => {
+            curr = data.getHash( texture.role );
+            var texID : number = CONTEXT.requestTextureindex( texture.request );
+            this.textures.push( new GlTexData( curr.role , curr.index, curr.GLTexNum, texID  ) );// texID , curr.index, curr.GLTexNum, 
+        });
+
+        if(cubeTextureRequests != null )
+        cubeTextureRequests.forEach( texture => {
+            curr =  data.getHash( texture.role );
+            var texID : number = CONTEXT.requestCubeTextureindex( texture.request );
+            this.cubeTextures.push(  new GlTexData( curr.role , curr.index, curr.GLTexNum, texID  ) );
+        });
     }
 
-    public use():void{
 
-        this.shader.use();
+    public bind(){
 
-    }
-
-    public override bind():void{
-
+       
         gl.uniform3fv(
-            this.shader.getUniformLocation( "eyePosition" ),
-            GLOBAL_WORLD.getActiveCameratPosition().xyz
+            CONTEXT.SHADERS.get(this.shader).getUniformLocation( "eyePosition" ),
+            CONTEXT.ActiveCamera.position.xyz
         );
                 
         gl.uniformMatrix4fv(
-            this.shader.getUniformLocation( "reflectionMatrix" ),
+            CONTEXT.SHADERS.get(this.shader).getUniformLocation( "reflectionMatrix" ),
             false,
             this.reflectionMatrix.values
         );
 
-        this.data.forEach( (data,i) => {
-            gl.uniform1i(data.uniform , data.textureNum );
-            data.Texture.bind( data.GL_TEXTURELOC );
-        });
-
-
+       
     }
-    public override unBind(){
-        this.data.forEach( (data,i) => {
-            gl.uniform1i(data.uniform , null );
-            data.Texture.unBind();
-        });
+    public unBind(){
+       // CONTEXT.unBindMaterial();
+       // CONTEXT.unBindTextures();
     }
-
-    public updateOther(val:number){}
-    public updateFilter(val:number){}
 }
 
-export class Material_03 extends Material_02{
-    
-    
 
+
+export class GLMaterial extends GLAMaterial{
     public constructor(
         name :string,
-        texturesIN : TextureDataInput[],
-        shader : GLShader
-    ){  
-        super(name,shader);
+        textureRequests:TextureDataInput[] = null,
+        squareTextureRequests:TextureDataInput[] = null
+    ){
+        // NOTE THAT squareTextureRequests Requires the SquareTextures to exist in the Context 
+        super( name,textureRequests,squareTextureRequests, DefaultShadowShader.getType() );
+    }
+}
 
-        // TODO provide UINT Texture for all unprovided textures 
-        var roleList : HashArray<boolean> = new HashArray<boolean>();
-
-        // SETUP TEXTURES FOR EVERY TEXTURE YOU HAVE RECIEVED;
-        texturesIN.forEach( texture => {
-            var data = this.shader.ShaderTextureData.getHash(texture.role);
-            roleList.add(true,texture.role);
-            this.data.add(
-                new TextureData( 
-                    this.shader.getUniformLocation( data.role ),data.index,
-                    texture.texture , data.GLTexNum
-                    ),
-                data.role
-            )    
-        });
+export class BackgroundMaterial extends GLAMaterial {
+    public constructor(
+        name :string,
+        textureRequests:TextureDataInput[] = null,
+        squareTextureRequests:TextureDataInput[] = null
+    ){
         
-        var texList = this.shader.ShaderTextureData.getKeys();
-        texList.forEach( textureRole => {
-            if( ! roleList.hasIndex(textureRole) ){
-                var data = this.shader.ShaderTextureData.getHash(textureRole);
-               
-                    roleList.add(true,textureRole);
-                    this.data.add(
-                        new TextureData( 
-                            this.shader.getUniformLocation( data.role ),data.index,
-                            new WhiteSTDTexture(10) , data.GLTexNum
-                            ),
-                        data.role
-                    )    
-                
-            }
-        });
+        // NOTE THAT squareTextureRequests Requires the SquareTextures to exist in the Context 
+        super(name,  textureRequests,squareTextureRequests, ShaderBackground.getType() );
 
-
-
-
-
-
-
+        var rotation            = CONTEXT.ActiveCamera.getProjectionMatrix().copy().getRotationMATRIX();
+        this.reflectionMatrix   = CONTEXT.ActiveCamera.getViewMatrix().copy().inverse();
+        this.reflectionMatrix   = this.reflectionMatrix.multiply( rotation.inverse() );
     }
-}
-
-export class GLMaterial extends Material_03{
-    public constructor(
-        name :string,
-        texturesIN : TextureDataInput[],
-    ){
-
-        texturesIN.push( new TextureDataInput("shadowTexture",  new GLShadowTexture() ))
-        super( name, texturesIN, new DefaultShadowShader(name) );
-    }
-}
-
-export class BackgroundMaterial extends Material_03 {//extends Material_01{
-
-    
-    public reflectionMatrix:mat4;
-    
-    public constructor(
-        name :string,
-        texturesIN : TextureDataInput[],
-    ){
-        super("BackGMAT_"+name, texturesIN, new ShaderBackground("BackGMAT_"+name) );
-
-        var rotation = GLOBAL_WORLD.getProjectionMatrix().copy().getRotationMATRIX();
-        this.reflectionMatrix = GLOBAL_WORLD.getViewMatrix().copy().inverse();
-        this.reflectionMatrix = this.reflectionMatrix.multiply( rotation.inverse() );
-    }
-
 }

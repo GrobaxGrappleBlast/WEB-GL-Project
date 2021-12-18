@@ -15,11 +15,8 @@ import { JSONAssetLoader } from "./Loaders/JSONAssetLoader";
         }
 
         public static initialize():void{
-            //console.log("IMAGE LOADER ADDED");
             AssetManager._loaders.push(new ImageAssetLoader());
-            //console.log("JSON LOADER ADDED");
             AssetManager._loaders.push(new JSONAssetLoader());
-           
         }
 
         public static registerLoader( loader: IAssetLoader ):void{
@@ -40,7 +37,7 @@ import { JSONAssetLoader } from "./Loaders/JSONAssetLoader";
 
                 let extension = assetName.split('.').pop().toLowerCase().replace(/ /g, "");
                 
-                for (let i = 0; i < AssetManager._loaders.length; i++) {                    
+                for (let i = 0; i < AssetManager._loaders.length; i++) {                   
                     let l = AssetManager._loaders[i];
                     var ext : string = "";
 

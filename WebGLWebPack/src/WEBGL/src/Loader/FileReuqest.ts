@@ -23,6 +23,7 @@ import { MessageBus } from "./Message/MessageBus";
                 MessageBus.removeSubscription(MESSAGE_ASSET_LOADER_ASSET_LOADED +  requestString, this);        
                 this.handler.onFileRecieved(this.content.data);
             }
+
         }
     
         onMessage(message : Message){
@@ -62,6 +63,7 @@ import { MessageBus } from "./Message/MessageBus";
                     this.respCounter[i] = true;
                 }
             });
+
         }
 
         private matchesRequest( val : string ): number{

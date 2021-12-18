@@ -2,10 +2,40 @@
 
 import { gl } from "./webGlUtil";
 import { HashArray } from '../HashArray';
+import { CONTEXT } from '../../Context';
 
+	export class GlTexData{
+		context_texture_id:number;
+		role:string;
+		index:number;
+		GLTexNum:number;
+		public constructor(
+			role  :string,
+			index :number,
+			GLTexNum:number,
+			context_shader_id:number = -1
+		){
+			this.role  = role  ;
+			this.index = index ;
+			this.GLTexNum = GLTexNum;
+			this.context_texture_id = context_shader_id;
+		}
+		public toString():string{
+			var str = "[";
+			str += ` role = "${this.role}" , `;
+			str += ` index = ${this.index} , `;
+			str += ` GLTexNum = ${this.GLTexNum} , `;
+			str += ` context_shader_id = ${this.context_texture_id} , `; 
+			return str;
+		}
+	}
 
-
-	export class GLShader {
+	export abstract class GLShader {
+		
+		public abstract getType();
+		public static getType(){
+			return "abstract";
+		};
 
 		public _name: string;
 		private _program: WebGLProgram;
@@ -13,25 +43,17 @@ import { HashArray } from '../HashArray';
 		private _attributes: { [name: string]: number } = {};
 		private _uniforms: { [name: string]: WebGLUniformLocation } = {}
 		private attrNames : string[] = [];
-		private uniNames : string[]  = [];
+		private uniNames  : string[] = [];
 
 		public ShaderTextureData :HashArray<GlTexData> = new HashArray<GlTexData>();
 		public getTextures() : GlTexData[]{
 			return this.ShaderTextureData.getElemList();
 		}
 
-		/**
-		 * Creates a new Shader Object, that contains vertex shader and fragment shader
-		 * And a name for identification.
-		 * @param name
-		 * @param VertexSRC
-		 * @param FragmentSRC
-		 */
+	
 		public constructor(name: string, VertexSRC: string, FragmentSRC: string) {
 			this._name = name;
-
 			let vShader = this.loadShader(VertexSRC, gl.VERTEX_SHADER);
-
 			let fShader = this.loadShader(FragmentSRC, gl.FRAGMENT_SHADER);
 			this.createProgram(vShader, fShader);
 
@@ -40,6 +62,7 @@ import { HashArray } from '../HashArray';
 		}
 
 		public use(): void {
+			CONTEXT.currentShader = this;
 			gl.useProgram(this._program);
 			this.checkForErrors();
 		}
@@ -136,24 +159,19 @@ import { HashArray } from '../HashArray';
 		}
 	}
 
-	export class GlTexData{
-		role:string;
-		index:number;
-		GLTexNum:number;
-		public constructor(
-			role  :string,
-			index :number,
-			GLTexNum:number
-		){
-			this.role  = role  ;
-			this.index = index ;
-			this.GLTexNum = GLTexNum;
-		}
-	}
 	export class DefaultShader extends GLShader{
 
+
+		public static type : string = "default";
+		public override getType():string{
+			return DefaultShader.type;
+		}
+		public static override getType(){
+			return DefaultShader.type;
+		};
+
+
 		public constructor(name : string){
-			
 			let  _vShaderSource : string = `
 			precision mediump float; 	
 
@@ -232,6 +250,7 @@ import { HashArray } from '../HashArray';
 			`;
 
 			super("DEFAULT_"+name, _vShaderSource, _fShaderSource);
+					
 			this.ShaderTextureData.add(new GlTexData("base"         ,0, gl.TEXTURE0),"diffuse"	);
 			this.ShaderTextureData.add(new GlTexData("normal"  		,1, gl.TEXTURE1),"normal"	);
 			this.ShaderTextureData.add(new GlTexData("cubeTexture"  ,2, gl.TEXTURE2),"reflection");
@@ -240,6 +259,16 @@ import { HashArray } from '../HashArray';
 	}
 
 	export class ShaderBackground extends GLShader{
+		
+		public typeNum : number ;
+		public static type : string = "background";
+		public override getType():string{
+			return ShaderBackground.type;
+		}
+		public static override getType(){
+			return ShaderBackground.type;
+		};
+
 		public constructor(name : string){
 			let  _vShaderSource : string = `
 			precision mediump float; 	
@@ -308,8 +337,16 @@ import { HashArray } from '../HashArray';
 		}
 	}
 	
-
 	export class DefaultShadowShader extends GLShader{
+
+
+		public static type : string = "defaultShadow";
+		public override getType():string{
+			return DefaultShadowShader.type;
+		}
+		public static override getType(){
+			return DefaultShadowShader.type;
+		};
 
 		public constructor(name : string){
 			
@@ -386,37 +423,32 @@ import { HashArray } from '../HashArray';
 			}
 
 			void main(){
-				
-				vec4 texBase    = texture2D( base 	, fragTexCord	);
-				vec4 texNormal  = texture2D( normal , fragTexCord	);
+				vec4 texBase   = texture2D( base 	, fragTexCord	);
+				vec4 texNormal = texture2D( normal , fragTexCord	);
 
 				vec3 newNormal = rotate_to_normal( frag_normal , texNormal.xyz );
-				vec3 incident =  eyePosition  - fragPosition   ;
+				vec3 incident  = eyePosition  - fragPosition   ;
 				//gl_FragColor = vec4( test, 0.5 , 1.0 );
 
-				vec3 ambINT   = vec3(0.4,0.4,0.4);	
-				vec3 sunINT   = vec3(0.7,0.6,0.1);
-				vec3 lightINT = ambINT + sunINT + Lightintencity() ;
+				vec3 ambINT    = vec3(0.4,0.4,0.4);	
+				vec3 sunINT    = vec3(0.7,0.6,0.1);
+				vec3 lightINT  = ambINT + sunINT + Lightintencity() ;
 				
 				vec3 test =  reflect(incident,  newNormal);
 				vec4 cubeTex    = textureCube( cubeTexture 	, frag_normal  ) + (0.0 * vec4(test,1.0) );  //normalize(frag_normal)	);
 
 				//gl_FragColor = cubeTex; //vec4( texBase.rgb * lightINT , texBase.a ) + ;
-				gl_FragColor = vec4(  Lightintencity(),Lightintencity(),Lightintencity()  , 1.0 ) +  ( 0.2 * cubeTex ) + (0.0 * vec4(texBase.rgb,1.0));
-				
+				gl_FragColor = vec4(  Lightintencity(),Lightintencity(),Lightintencity()  , 1.0 ) +  ( 0.2 * cubeTex ) + (0.0 * vec4(texBase.rgb,1.0));	
 			}
-
-
 			`;
 
-			super("SHADOW_"+name, _vShaderSource, _fShaderSource);
-			this.ShaderTextureData.add(new GlTexData("base"         	,1, gl.TEXTURE1),"diffuse"	);
-			this.ShaderTextureData.add(new GlTexData("normal"  			,2, gl.TEXTURE2),"normal"	);
-			this.ShaderTextureData.add(new GlTexData("cubeTexture"  	,3, gl.TEXTURE3),"reflection");
-			this.ShaderTextureData.add(new GlTexData("shadowTexture"  	,0, gl.TEXTURE0),"shadowTexture");
+			super(name, _vShaderSource, _fShaderSource);
 			
-			// uniform vec3 LightPosition;
-			// uniform vec2 shadowClipNearFar;
+			this.ShaderTextureData.add(new GlTexData("shadowTexture"  	,0, gl.TEXTURE0),"shadowTexture"	);
+			this.ShaderTextureData.add(new GlTexData("base"         	,1, gl.TEXTURE1),"diffuse"			);
+			this.ShaderTextureData.add(new GlTexData("normal"  			,2, gl.TEXTURE2),"normal"			);
+			this.ShaderTextureData.add(new GlTexData("cubeTexture"  	,3, gl.TEXTURE3),"reflection"		);
+			
 		}
 
 	}

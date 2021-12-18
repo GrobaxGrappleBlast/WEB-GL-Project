@@ -1,7 +1,9 @@
 import { FileRequest, FileRequestBundle } from '../../Loader/FileReuqest';
 import { IFileRequestResponse } from "../../Loader/IFileRequestResponse";
 import { gl } from "../GL/webGlUtil";
-import { GLOBAL_WORLD } from '../../World/World';
+import { CONTEXT } from '../../Context';
+import { GLShader } from '../GL/GLShader';
+import { Color } from 'three';
 
 export interface ITexture{
 
@@ -13,15 +15,32 @@ export interface ITexture{
     changeFilter(filterMethod:number);
     changeClamp(clampMethod : number );
 }
-    export class GLTexture implements ITexture{
 
+    export class GLColor{
+        public r :number ;
+        public g :number ;
+        public b :number ;
+        public a :number ;
+        public constructor(r :number,g :number,b :number,a :number){
+            this.r = r ; 
+            this.g = g ; 
+            this.b = b ; 
+            this.a = a ; 
+        }
+
+    }
+    export abstract class GLTexture implements ITexture{
+
+        public name : string; 
+        public isLoaded : boolean = false;
         private _texture : WebGLTexture = gl.createTexture();
         private _textureType : number ;
-        private _clampMethod : number ;
-        private _filtrMethod : number ;
 
         private UintWidth   : number    = 1 ;
         private UintHeight  : number    = 1 ;
+        
+        public _clampMethod : number ;
+        public _filtrMethod : number ;
 
         public constructor(
             textureType : number = gl.TEXTURE_2D,
@@ -74,10 +93,12 @@ export interface ITexture{
                     this.source
                 );
             }
+            this.isLoaded = true;
 
         }
         
-        private THIS_GL_TEXTURE_ID:number;
+        public THIS_GL_TEXTURE_ID:number;
+
         public bind( GL_TEXTURE_ID : number =  gl.TEXTURE0 ){
             this.THIS_GL_TEXTURE_ID = GL_TEXTURE_ID;
             gl.activeTexture(  GL_TEXTURE_ID );
@@ -102,29 +123,33 @@ export interface ITexture{
             gl.activeTexture(this.THIS_GL_TEXTURE_ID);
             gl.bindTexture(this._textureType, null);
         }
+    }
 
+    export class CheckerTexture extends GLTexture{
 
-        public static createCheckers( boxes : number = 8) : GLTexture {
-            
+        public constructor( name : string , boxes : number = 8, height:number = 64, width:number=64, color1 : GLColor = new GLColor(255,55,55,255) , color2 : GLColor =  new GLColor(55,55,55,255) ){
+            super();
+
+            this.name = name
             function createLine( startWhite : boolean) : number[] {
                 
                 var arr : number [] = [];
                 var bool : boolean = startWhite;
-                var curr  : number = 0;
+                var curr  : GLColor;
 
                 for (let a = 0; a < 8; a++) {
                     
                     if(bool){
-                        curr = 255;
+                        curr = color1;
                     }else{
-                        curr = 10;
+                        curr = color2;
                     }
 
                     for (let i = 0; i < 8; i++) {
-                        arr.push(curr); // red 
-                        arr.push(curr); // green
-                        arr.push(curr); // blue 
-                        arr.push(255); // alpha 
+                        arr.push(curr.r); // red 
+                        arr.push(curr.g); // green
+                        arr.push(curr.b); // blue 
+                        arr.push(curr.a); // alpha 
                     }
 
                     bool = !bool;
@@ -143,27 +168,31 @@ export interface ITexture{
                 whiteLine = !whiteLine;
             }
 
-            var uint = new Uint8Array( arr );
-            var texture = new GLTexture();
-            texture.load_uintImage(uint, 64, 64);
-            return texture;
+            var uint = new Uint8Array( arr );         
+            this.load_uintImage(uint, 64, 64);
+
         }
+
+          
     }
 
-    export class WhiteSTDTexture extends GLTexture {
 
-        public constructor( r : number = 0, g : number = 0,b : number = 0 ){
+    export class COLORSTDTexture extends GLTexture {
+
+        public constructor( r : number = 0, g : number = 0,b : number = 0 , a : number = 255){
             super();
-            this.tex(r,g,b);
+            this.tex(r,g,b,a);
         }
 
-        public tex(r : number = 0, g : number = 0,b : number = 0) : void {
-            var a : Uint8Array = new Uint8Array(4);  
-                a[0] = (r); // red 
-                a[1] = (g); // green
-                a[2] = (b); // blue 
-                a[3] = (255); // alpha 
-            this.load_uintImage(a,1,1)
+        public tex(r : number = 0, g : number = 0,b : number = 0, a : number = 255) : void {
+            var A : Uint8Array = new Uint8Array(4);  
+                A[0] = (r); // red 
+                A[1] = (g); // green
+                A[2] = (b); // blue 
+                A[3] = (a); // alpha 
+            
+            this.name = "[r"+A[0] +",g"+A[1] +",b"+A[2] +",a"+A[3]+"]";
+            this.load_uintImage(A,1,1)
         }
 
     }
@@ -179,6 +208,7 @@ export interface ITexture{
             filterMethod: number = gl.LINEAR
         ){
             super(textureType ,clampMethod ,filterMethod)
+            this.name = requestFile;
             this._request = requestFile;
 
        
@@ -202,8 +232,7 @@ export interface ITexture{
 
     }
     
-
-    export class CubeMapTexture implements IFileRequestResponse, ITexture{
+    export class CubeMapTexture extends GLTexture implements IFileRequestResponse, ITexture{
 
         private a1 = "resources\\images\\cm_back.png   "     ;
         private a2 = "resources\\images\\cm_bottom.png "     ;
@@ -219,77 +248,64 @@ export interface ITexture{
 
         private texture : WebGLTexture;
         private images  : TexImageSource[] = [];
-        private _clampMethod : number ;
-        private _filtrMethod : number ;
-
-
-        //private UintWidth   : number = 1;
-        //private UintHeight  : number = 1;
-        private loaded :boolean = false;
 
         public constructor(
-            clampMethod : number =  gl.CLAMP_TO_EDGE ,
-            filterMethod:number = gl.LINEAR
+            requests        : string[] ,
+            clampMethod     : number    = gl.CLAMP_TO_EDGE  ,
+            filterMethod    : number    = gl.LINEAR         ,
         ){
+            super( undefined ,clampMethod, filterMethod);
+            this.name = requests[0];
+            var i = 0;
+            this.requests.push(requests[i++]);
+            this.requests.push(requests[i++]);
+            this.requests.push(requests[i++]);
+            this.requests.push(requests[i++]);
+            this.requests.push(requests[i++]);
+            this.requests.push(requests[i++]);
 
-            this._clampMethod = clampMethod;
-            this._filtrMethod = filterMethod;
-            
-            this.requests.push(this.a1);
-            this.requests.push(this.a2);
-            this.requests.push(this.a3);
-            this.requests.push(this.a4);
-            this.requests.push(this.a5);
-            this.requests.push(this.a6);
-            this.requests.push(this.a7);
-            this.requests.push(this.a8);
-            this.requests.push(this.a9);
             this.requestImage();
-
             this.texture = gl.createTexture();
+        }
+
+        override loadImage( source:TexImageSource ) {
+            //throw new Error('Method not implemented.');
+        }
+        override load_uintImage(source: Uint8Array, uWidth: number, uHeight: number) {
+            //throw new Error('Method not implemented.');
+        }
+        override loadtexture(){
+            this.texture = gl.createTexture();
+            gl.bindTexture(   gl.TEXTURE_CUBE_MAP, this.texture);
+    
+            for(var i=0; i < 6; i++)
+                gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.images[i] );
             
+            gl.generateMipmap( gl.TEXTURE_CUBE_MAP);
+            gl.texParameteri(  gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
+    
+            gl.texParameteri(  gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, this._filtrMethod);	//Setup up scaling
+            gl.texParameteri(  gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, this._filtrMethod);	//Setup down scaling
+            gl.texParameteri(  gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S,     this._clampMethod);	//Stretch image to X position
+            gl.texParameteri(  gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T,     this._clampMethod);	//Stretch image to Y position
+            gl.generateMipmap( gl.TEXTURE_CUBE_MAP  );
+
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP,null);
+        return this.texture;
         }
 
-        loadImage( source:TexImageSource[] ) {
-            //throw new Error('Method not implemented.');
-        }
-        load_uintImage(source: Uint8Array, uWidth: number, uHeight: number) {
-            //throw new Error('Method not implemented.');
-        }
 
-        private THIS_GL_TEXTURE_ID : number ;
-        public bind( GL_TEXTURE_ID : number = gl.TEXTURE0 ){
+        override bind( GL_TEXTURE_ID : number = gl.TEXTURE0 ){
             this.THIS_GL_TEXTURE_ID = GL_TEXTURE_ID;
             gl.activeTexture(  GL_TEXTURE_ID );
             gl.bindTexture(   gl.TEXTURE_CUBE_MAP, this.texture);
         }
-        public unBind(){
+        override unBind(){
             gl.activeTexture(this.THIS_GL_TEXTURE_ID);
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
         }
 
-        public loadtexture(){
-                this.texture = gl.createTexture();
-                gl.bindTexture(   gl.TEXTURE_CUBE_MAP, this.texture);
-        
-                for(var i=0; i < 6; i++)
-                    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.images[i] );
-                
-                gl.generateMipmap( gl.TEXTURE_CUBE_MAP);
-                gl.texParameteri(  gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
-        
-                gl.texParameteri(  gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, this._filtrMethod);	//Setup up scaling
-                gl.texParameteri(  gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, this._filtrMethod);	//Setup down scaling
-                gl.texParameteri(  gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S,     this._clampMethod);	//Stretch image to X position
-                gl.texParameteri(  gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T,     this._clampMethod);	//Stretch image to Y position
-                gl.generateMipmap( gl.TEXTURE_CUBE_MAP  );
-
-                this.loaded = true;
-
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP,null);
-            return this.texture;
-        }
-
+        // ## --- --- --- ## --- --- --- ## --- --- --- ## --- --- --- FILE REQUESTS 
         public onFileRecieved(asset: any[] ) {
 
             for (let i = 0; i < asset.length; i++) {
@@ -302,59 +318,36 @@ export interface ITexture{
             var fr : FileRequestBundle = new FileRequestBundle(this.requests, this);
         }
 
-        public changeFilter(filterMethod:number = gl.LINEAR){
-            this._filtrMethod = filterMethod;
-            this.loadtexture();
-        }
-        public changeClamp(clampMethod : number =  gl.CLAMP_TO_EDGE ){
-            this._clampMethod = clampMethod;
-            this.loadtexture();
-        }
+
 
 
     }
 
-    
-    export class GLShadowTexture implements ITexture{
-
-        private requests: string[] = [] ;
-
-        private texture : WebGLTexture;
-        private images  : TexImageSource[] = [];
-        private _clampMethod : number ;
-        private _filtrMethod : number ;
-
-
-        //private UintWidth   : number = 1;
-        //private UintHeight  : number = 1;
-        private loaded :boolean = false;
+    export class GLShadowTexture extends GLTexture implements ITexture{
 
         public constructor(
             clampMethod : number =  gl.CLAMP_TO_EDGE ,
             filterMethod:number = gl.LINEAR
         ){
-
+            super();
+            this.name = "shadow";
             this._clampMethod = clampMethod;
             this._filtrMethod = filterMethod;
-            
         }
 
-        loadImage( source:TexImageSource[] ){}
-        load_uintImage(source: Uint8Array, uWidth: number, uHeight: number) {}
+        override load_uintImage(source: Uint8Array, uWidth: number, uHeight: number) {}
+        override loadImage(source: TexImageSource){}
+        override loadtexture(){}
 
-        private THIS_GL_TEXTURE_ID : number ;
         public bind( GL_TEXTURE_ID : number = gl.TEXTURE0 ){
             this.THIS_GL_TEXTURE_ID = GL_TEXTURE_ID;
             gl.activeTexture(  GL_TEXTURE_ID );
-            gl.bindTexture(   gl.TEXTURE_CUBE_MAP, GLOBAL_WORLD.staticShadowTexture);
+            gl.bindTexture(   gl.TEXTURE_CUBE_MAP, CONTEXT.ShadowTexture);
         }
+
         public unBind(){
             gl.activeTexture(this.THIS_GL_TEXTURE_ID);
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
         }
-        public loadtexture(){}
-        public changeFilter(filterMethod:number = gl.LINEAR){}
-        public changeClamp(clampMethod : number =  gl.CLAMP_TO_EDGE ){}
-
 
     }

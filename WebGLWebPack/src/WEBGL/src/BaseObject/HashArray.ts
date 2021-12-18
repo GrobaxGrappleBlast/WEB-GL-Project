@@ -7,18 +7,21 @@ export class HashArray<T>{
 
     public a : Array<T> = new Array<T>()
 
-
     // ADD THINGS
     public add(element : T, hash :string){
-        if( !(this.hasIndex(hash)) ){
-            this.hashList[hash] = this.length;
+        let h = hash.trim();
+        if( !(this.hasIndex(h)) ){
+            this.hashList[h] = this.length;
             this.elemList.push(element);
-            this.keyList.push(hash);
+            this.keyList.push(h);
             this.length++;
         }
     }
-    
 
+    public addMKeys(element : T, hash :string[] ){
+        this.add( element , hash[0]);
+        this.applyKeysForindex( hash , this.getIndex(hash[0]) );
+    }
 
     public GenerateCheckList<A>( value : A ){
         let arr :HashArray<A> = new HashArray<A>();
@@ -28,30 +31,52 @@ export class HashArray<T>{
         return arr;
     }
 
+    public applyKeysForindex( keys:string[] , index : number){
+        if( !(this.elemList.length - 1 < index) ) // index is not larger than the length of the list
+            if( !(index < 0)  ) // cannot be a negative index
+                keys.forEach( key => {
+                    let k : string = key.trim();
+                    if( !this.hasIndex(k) ){
+                        this.keyList.push(k);
+                        this.hashList[k] = index;
+                    }
+                })
+    }
+
     // CHANGETHINGS
     public change( element : T , i : number){
         this.elemList[i] = element;
     }
     
     public changeHash( element : T , hash:string){
-        this.change( element, this.getIndex(hash) );
+        this.change( element, this.getIndex(hash.trim()) );
     }
 
     // GET THINGS 
     public get(i : number): T{
+        if(i > this.length -1)
+            return null;
+        
+        if(i < 0)
+            return null;
+        
+
         return this.elemList[i];
     }
 
     public getHash(hash:string): T{
-        return this.elemList[  this.hashList[hash]  ];
+        return this.elemList[  this.hashList[hash.trim()]  ];
     }
 
     public getIndex(hash:string):number{
-        return this.hashList[hash];
+        return this.hashList[hash.trim()];
     }
 
     public hasIndex(hash:string):boolean{
-        if( this.hashList[hash] != null )
+        if(this.length== 0)
+            return false;
+
+        if( this.hashList[hash.trim()] != null )
             return true;
         return false;
     }
@@ -74,4 +99,27 @@ export class HashArray<T>{
     public getKeys(){
         return this.keyList;
     }
+
+    public GetDiferences( newArr : HashArray<T> ){
+        
+        var used = new HashArray<number>();
+        var diff = new HashArray<number>();
+
+        this.keyList.forEach( k => {
+            // for each key in the lsit 
+            if( newArr.hasIndex(k) )
+            {    // if the new array has this Aswell  
+
+                if( used.get(this.getIndex(k)) == -1 ) 
+                {// if the resulting index doesnot Already exists 
+                    used.add( this.getIndex(k) , ""+this.getIndex(k) );
+                }
+                
+            }else{  // if the index DOES NOT exist in the other list
+                diff.add( this.getIndex(k), ""+this.getIndex(k) );
+            }
+        });
+        return diff.elemList;
+    }
+
 }

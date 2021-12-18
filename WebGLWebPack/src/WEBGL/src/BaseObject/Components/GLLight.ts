@@ -4,8 +4,7 @@ import { vec3 } from '../../Math/TSM_Library/vec3';
 import { GLCamera } from './GLCamera';
 import { GLShader } from '../GL/GLShader';
 import { gl } from '../GL/webGlUtil';
-import { GLOBAL_WORLD } from '../../World/World';
-import { Material_03 } from './GLMaterial';
+import { CONTEXT } from '../../Context';
 
 
 // source https://www.youtube.com/watch?v=UnFudL21Uq4
@@ -43,15 +42,15 @@ export class GLPointLight{
         // pos x
         this.viewers[0] = new GLCamera( this.position, this.position.add( new vec3([ 1.0,0.0,0.0]) ),  new vec3([ 0.0,-1.0,0.0 ])  );
         // neg x.add()
-        this.viewers[1] = new GLCamera( this.position, this.position.add( new vec3([-1.0,0.0,0.0])), new vec3([ 0.0,-1.0,0.0 ])  );
+        this.viewers[1] = new GLCamera( this.position, this.position.add( new vec3([-1.0,0.0,0.0]) ),  new vec3([ 0.0,-1.0,0.0 ])  );
         // pos y.add()
         this.viewers[2] = new GLCamera( this.position, this.position.add( new vec3([ 0.0,1.0,0.0]) ),  new vec3([ 0.0, 0.0,1.0 ])  );
         // neg y.add()
-        this.viewers[3] = new GLCamera( this.position, this.position.add( new vec3([ 0.0,-1.0,0.0])), new vec3([ 0.0, 0.0,-1.0 ]) );
+        this.viewers[3] = new GLCamera( this.position, this.position.add( new vec3([ 0.0,-1.0,0.0])),  new vec3([ 0.0, 0.0,-1.0])  );
         // pos z.add()
         this.viewers[4] = new GLCamera( this.position, this.position.add( new vec3([ 0.0,0.0,1.0]) ),  new vec3([ 0.0,-1.0,0.0 ])  );
         // neg z.add()
-        this.viewers[5] = new GLCamera( this.position, this.position.add( new vec3([ 0.0,0.0,-1.0])), new vec3([ 0.0,-1.0,0.0 ])  );
+        this.viewers[5] = new GLCamera( this.position, this.position.add( new vec3([ 0.0,0.0,-1.0])),  new vec3([ 0.0,-1.0,0.0 ])  );
 
     
         this.shadowShader = new ShadowMAPShader();
@@ -95,7 +94,7 @@ export class GLPointLight{
 
     public renderShadow(){
         
- 
+        /*
         this.shadowShader.use();
         gl.bindTexture( gl.TEXTURE_CUBE_MAP, GLPointLight.shadowCube );
         gl.bindFramebuffer(gl.FRAMEBUFFER,GLPointLight.shadowBuffer, );
@@ -138,9 +137,8 @@ export class GLPointLight{
             gl.clear(gl.COLOR_BUFFER_BIT |gl.DEPTH_BUFFER_BIT);
           
 
-            GLOBAL_WORLD.MESHES.forEach( mesh =>{
-                mesh.bind(this.shadowShader);
-                mesh.draw();
+            CONTEXT.MESHES.forEach( mesh =>{
+                //mesh.draw(this.shadowShader);
             });
 
 
@@ -157,6 +155,7 @@ export class GLPointLight{
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
 
         return GLPointLight.shadowCube;
+        */
     }
 
     public bindToCurrentMaterial(){
@@ -172,9 +171,16 @@ export class GLPointLight{
 	
 }
 
-class ShadowMAPShader extends GLShader{
+export class ShadowMAPShader extends GLShader{
+    public static type : string = "defaultShadow";
+    public override getType():string{
+        return ShadowMAPShader.type;
+    }
+    public static override getType(){
+        return ShadowMAPShader.type;
+    };
+
     public constructor(name : string = "shader"){
-        
         
         let  _vShaderSource : string = `	
         

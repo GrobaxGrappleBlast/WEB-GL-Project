@@ -7,7 +7,7 @@ import { JSON3D, Material, Mesh, Light, Camera, NodeElement, JSON_3DSCENE_SORTER
 import { GLMesh } from '../BaseObject/Components/GLMesh';
 
 import { DefaultShader, GLShader } from '../BaseObject/GL/GLShader';
-import { GLTexture, LoadableTexture, CubeMapTexture, ITexture, WhiteSTDTexture } from '../BaseObject/Components/GLTexture';
+import { GLTexture, LoadableTexture, CubeMapTexture, ITexture } from '../BaseObject/Components/GLTexture';
 import { GLMaterial, TextureDataInput, BackgroundMaterial } from '../BaseObject/Components/GLMaterial';
 import { Euler, Quaternion } from 'three';
 import { GLAMaterial as MMat} from "../BaseObject/Components/GLMaterial"  
@@ -17,205 +17,109 @@ import { IFileRequestResponse } from '../Loader/IFileRequestResponse';
 import { mat3 } from '../Math/TSM_Library/mat3';
 import { GLCamera } from '../BaseObject/Components/GLCamera';
 import { GLPointLight } from '../BaseObject/Components/GLLight';
+import { CONTEXT } from '../Context';
 
-    abstract class AWorld{
-        public FarPlaneCoordinate = 1000.0;
-
+    export class World{
         
-        // public camPos      = new vec3([5,5,5]);
-        // public lookAt      = new vec3([ 0,0,0]);
-        // public zDirection  = new vec3([ 0,0,1]);
-
         public worldMatrix  : mat4 = mat4.getIdentity(); 
-        //public viewMatrix   : mat4 = mat4.lookAt( this.camPos, this.lookAt, this.zDirection);
-        //public projMatrix   : mat4 = mat4.perspective( toRadians(45), ( gl.canvas.width / gl.canvas.height), 0.1, this.FarPlaneCoordinate );
-
-        private Camera : GLCamera = new GLCamera(new vec3([5,5,5]),new vec3([ 0,0,0]),new vec3([ 0,0,1]), 90);
         public static testLight : GLPointLight;
-
-        getActiveCameratPosition() : vec3 {
-            return this.Camera.position;
-        }
-
-        getWorldMatrix():  mat4 {
-            return this.worldMatrix;
-        }
-        getViewMatrix():  mat4 {
-            return this.Camera.getViewMatrix() ;
-        }
-        getProjectionMatrix(): mat4 {
-            return this.Camera.getProjectionMatrix();
-        }
-
-       
-
 
         private startPos : vec3 = new vec3([5,5,5]);
         private rotAngle : vec3 = new vec3([0,0,1]).normalize();
         private rotMAT   : mat3 = mat3.getIdentity();
+
+        public constructor(){
+            CONTEXT.ActiveWorld = this; 
+            CONTEXT.ActiveCamera = new GLCamera(new vec3([5,5,5]),new vec3([ 0,0,0]),new vec3([ 0,0,1]), 90);
+        }
+        
+        getWorldMatrix():  mat4 {
+            return this.worldMatrix;
+        }
         
         public rotateWorld(angle:number){
-
             this.rotMAT.rotate(angle,this.rotAngle);
-            this.Camera.position = this.rotMAT.multiplyVec3(this.startPos,this.Camera.position);
-            console.log("R");
-            //this.worldMatrix.rotate(angle, new vec3([0.5,0.5,1]) );
+            CONTEXT.ActiveCamera.position = this.rotMAT.multiplyVec3(this.startPos,CONTEXT.ActiveCamera.position);
         }
+
+
     }
 
-    export enum WorldMatrixNames{
-        World       = "worldMatrix",
-        Projection  = "projMatrix",
-        View        = "viewMatrix" 
-    };
+    export class AWorld extends World implements IFileRequestResponse{
 
-    export var GLOBAL_WORLD:World;
-
-    export class World extends AWorld implements IFileRequestResponse{
-
-        public MESHES      : GLMesh[] = [];
-        public MATERIALS   : MMat[] = [];
-        private loaded      : boolean = false;
-
-        public staticShadowTexture;
-
-        public updateOther(val){
-            this.MATERIALS.forEach(e  => {
-                e.updateOther(val);
-            });
-        }
-
-        public updateFilter(val){
-            this.MATERIALS.forEach(e  => {
-                e.updateFilter(val);
-            });
-        }
-
-        public bind(): void{
-            if(this.loaded)
-            this.MATERIALS.forEach( mat => {
-                mat.use();
-                mat.updateUniform_World(      GLOBAL_WORLD.getWorldMatrix() );
-                mat.updateUniform_Camera(     GLOBAL_WORLD.getViewMatrix() );
-                mat.updateUniform_Projection( GLOBAL_WORLD.getProjectionMatrix() )
-                mat.bind()
-            });
-        }
-
-        public draw(): void {
-            if(World.testLight){
-                //World.testLight.renderShadow();
-                this.staticShadowTexture = World.testLight.renderShadow();
-            }
-            if(this.loaded == true){
-                this.bind();
-                this.MATERIALS.forEach( ( mat , i ) => {
-                    mat.use();
-                    mat.bind();
-                    mat._meshIndicees.forEach( index => {
-                        this.MESHES[index].bind();
-                        this.MESHES[index].draw();
-                        this.MESHES[index].unbind();
-                    });
-                    mat.unBind();
-                });
-                
-                GLOBAL_WORLD.rotateWorld(0.01   )
-            
-            }
-        }
 
         public constructor(){
             super();
-            GLOBAL_WORLD = this;
-           
             var a = new FileRequest("resources\\sphere.json", this);
         }
  
-
-        private MATINDEX = 0;
-        private MESHINDX = 0;
-        private addMaterialAndMesh(
-            matname : string ,textures : TextureDataInput[], mesh : GLMesh[]
-         ){
-             this.MATERIALS.push( new GLMaterial(
-                 matname,
-                 textures
-             ));
-
-             for (let i = 0; i < mesh.length; i++) {
-                 mesh[i].MaterialIndex = this.MATINDEX;
-                this.MESHES.push( mesh[i] );
-                this.MATERIALS[ this.MATINDEX ]._meshIndicees.push( this.MESHINDX );
-                
-                this.MESHINDX++;
-             }
-             this.MATINDEX++;
-             
-         }
-
         public onFileRecieved( asset : any){
+           
             var JSON : JSON_3DSCENE_SORTER = asset.data; 
-     
-            /*
-            this.addMaterialAndMesh("BaseMaterial_buptidu",
-                [
-                new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
-                new TextureDataInput("normal"      ,  new LoadableTexture("resources\\images\\normalmap.png") ),
-                new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
-                ],
-                JSON.getMeshes()[0]
-            );*/
+            
+            CONTEXT.PreLoadCubeTexture([
+                "resources\\images\\cm_back.png                     ",
+                "resources\\images\\cm_bottom.png                   ",
+                "resources\\images\\cm_front.png                    ",
+                "resources\\images\\cm_left.png                     ",
+                "resources\\images\\cm_right.png                    ",
+                "resources\\images\\cm_top.png                      ",
+            ]);
 
-            console.log("1");
-            var m = GLMesh.createBackgroundFarPlaneMesh();
-            m.enableBackRender();
-            this.addMaterialAndMesh("reflection",
-                [
-                //new TextureDataInput("diffuse"     ,  GLTexture.createCheckers(8) ),
-                new TextureDataInput("reflection"  ,  new CubeMapTexture() ),
-                ],
-                [m]
-            );
+            
+            function setMatMesh( matName : string , mesh : GLMesh , texReqs : TextureDataInput[] = null, texCubReqs : TextureDataInput[] = null ){
+               
+                var meshName = mesh.name;
+                var meshIndi = mesh.Index;
 
-            console.log("2");
-            this.addMaterialAndMesh("FLOORMAT",
-                [
-                new TextureDataInput("diffuse"     ,  new LoadableTexture("resources\\images\\xamp23.png") ),
-                new TextureDataInput("normal"      ,  new LoadableTexture("resources\\images\\normalmap.png") ),
-                ],
-                [new GLMesh(
-                    [   -2 , -1 , -1 ,-2 , -5 , -1 ,
-                         2 , -1 , -1 , 2 , -5 , -1 ,
-                    ],[0,1,1,1,0,0,1,0],[0,1,2,3,2,1]) ]
-            );
+                CONTEXT.requestMaterialIndex( new GLMaterial(matName,texReqs,texCubReqs) )
+                CONTEXT.registerMesh(mesh); // fail save 
 
-            console.log("3");
-            var m1 : GLMesh = new GLMesh(
-                [   0.25, -0.5 ,  0.75 ,0.25, -0.5 , -1.75 ,
-                    -1.25, -0.5 ,  0.75 ,-1.25, -0.5 , -1.75 ,
-                ],[
-                    0,1,1,1,0,0,1,0],[0,1,2,3,2,1]    
-            )
-            var m2 : GLMesh = new GLMesh(
-                [   -1 , -1   ,  0,-1 , -1   , -3,
-                    -1 , -2.5 ,  0,-1 , -2.5 , -3,
-                    ],[0,1,1,1,0,0,1,0],[0,1,2,3,2,1]
-            );
-            m2.enableDoubleSidedRender();
-            m1.enableDoubleSidedRender();
+                CONTEXT.MESHES.getHash(meshName).MaterialIndex = CONTEXT.requestMaterialIndexHash(matName);
+                CONTEXT.MATERIALS.getHash(matName)._meshIndicees.push( meshIndi );
+            }
+            
+            console.log("---");
+            var mesh : GLMesh;
+            mesh =  JSON.getMeshes()[0];
+            var texs : TextureDataInput[] = [
+                new TextureDataInput("diffuse","resources\\images\\RTS_Crate.jpg"),
+                new TextureDataInput("normal" ,"resources\\images\\normalmap.png"),
+            ]
 
-            this.addMaterialAndMesh(
-                "WALLMAT",
-                [new TextureDataInput("diffuse"      ,  new WhiteSTDTexture( 255 )  ),
-            ],
+            // THE CUBE TEXTURES ASSUMES THAT THEY HAVE ALREADY BEEN GATHERED IN THE CONTEXT;
+            var texCub: TextureDataInput[] =[
+                new TextureDataInput("reflection" ,"resources\\images\\cm_back.png"),
+            ]
+            setMatMesh("MATERIAL_NAME_01", mesh, texs , texCub );
 
-                [ m1 , m2]
-            );
+            console.log("---");
+            mesh = new GLMesh(
+                [   -2 , -1 , -1 ,-2 , -5 , -1 ,
+                     2 , -1 , -1 , 2 , -5 , -1 ,
+                ],[0,1,1,1,0,0,1,0],[0,1,2,3,2,1]);
+            mesh.name = "floor";
+            setMatMesh("MATERIAL_FLOOR", mesh);
 
+            console.log("---");
+            mesh = new GLMesh(
+                [ 0.25, -0.5 ,  0.75 ,0.25, -0.5 , -1.75 ,
+                 -1.25, -0.5 ,  0.75 ,-1.25, -0.5 , -1.75 ,
+              ],[ 0,1,1,1,0,0,1,0],[0,1,2,3,2,1] );
+            mesh.name = "wall_01";
+            setMatMesh("MATERIAL_WALL", mesh);
 
+            console.log("---");
+            mesh = new GLMesh(
+                    [   -1 , -1   ,  0,-1 , -1   , -3,
+                        -1 , -2.5 ,  0,-1 , -2.5 , -3,
+                        ],[0,1,1,1,0,0,1,0],[0,1,2,3,2,1]
+                );
+            mesh.name = "wall_02";
+            setMatMesh("MATERIAL_WALL", mesh);
+
+         
             World.testLight = new GLPointLight( new vec3( [0,0,0]));
-            this.loaded = true;
 
         }
 

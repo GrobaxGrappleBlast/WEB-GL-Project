@@ -2,9 +2,10 @@ import { WebGLUtil } from "./BaseObject/GL/webGlUtil";
 import { AssetManager } from "./Loader/Assets/AssetManager";
 import { MessageBus } from "./Loader/Message/MessageBus";
 import { testClass } from "./test";
-import { GLOBAL_WORLD, World } from './World/World';
 import { FileRequest } from './Loader/FileReuqest';
 import { IFileRequestResponse } from './Loader/IFileRequestResponse';
+import { CONTEXT, Context } from './Context';
+import { World } from "./World/World";
     
 
     export class startClass implements IFileRequestResponse{
@@ -19,27 +20,25 @@ import { IFileRequestResponse } from './Loader/IFileRequestResponse';
         public onFileRecieved(asset: any) {
            console.log(asset);
         }
-    
-        private world : World
+
         public init(): void{
-            AssetManager.initialize();
             startClass.canvas = WebGLUtil.initialize("canvas");
-            this.world = new World();
+            AssetManager.initialize();
+            var a : Context = new Context();
             requestAnimationFrame(this.update.bind(this));
         }
         
         public update(){
-            GLOBAL_WORLD.draw();
+            CONTEXT.RenderFrame();
             MessageBus.update(1);
             requestAnimationFrame(this.update.bind(this));
         }      
 
-
         public updateOther(val){
-            this.world.updateOther(val);
+            //this.world.updateOther(val);
         }
         public updateFilter(val){
-            this.world.updateFilter(val);
+            //this.world.updateFilter(val);
         }
 
         public _e : testClass;
